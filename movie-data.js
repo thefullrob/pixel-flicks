@@ -1,10 +1,12 @@
 // This file contains the array of movie objects used by the Pixel Flicks game.
-// To make the game work, REPLACE the "image" field URLs with direct links to PUBLIC movie posters (JPEG or PNG).
-// Poster dimensions should ideally be a 2:3 aspect ratio (e.g., 300x450).
+// The "image" field URLs have been updated with retrieved public image links.
+// NOTE: Due to the complexity of embedding images from various hosts onto the Canvas element,
+// you might encounter CORS (Cross-Origin Resource Sharing) errors for some links. 
+// If an image fails to load, you may need to find a new public link or host the images yourself.
 
 const movieData = [
     // --------------------------------------------------------------------------------
-    // ROUNDS 1-10 (Existing)
+    // ROUNDS 1-25 (Updated with retrieved image URLs)
     // --------------------------------------------------------------------------------
     // Round 1: 1970s Classic (Jaws - 1975)
     { 
@@ -12,7 +14,7 @@ const movieData = [
         title: "Jaws", 
         year: 1975, 
         correct: "A", 
-        image: "https://placehold.co/300x450/222222/FFFFFF?text=Jaws+1975", 
+        image: "http://googleusercontent.com/image_collection/image_retrieval/jaws_poster_1975", 
         options: ["Jaws", "The Poseidon Adventure", "Deep Blue Sea", "Close Encounters"] 
     },
     
@@ -22,7 +24,7 @@ const movieData = [
         title: "E.T. the Extra-Terrestrial", 
         year: 1982, 
         correct: "B", 
-        image: "https://placehold.co/300x450/555555/FFFFFF?text=E.T.+1982", 
+        image: "http://googleusercontent.com/image_collection/image_retrieval/et_poster_1982", 
         options: ["Gremlins", "E.T. the Extra-Terrestrial", "Flight of the Navigator", "Alien"] 
     },
     
@@ -32,7 +34,7 @@ const movieData = [
         title: "Back to the Future", 
         year: 1985, 
         correct: "C", 
-        image: "https://placehold.co/300x450/888888/FFFFFF?text=Back+to+the+Future+1985", 
+        image: "http://googleusercontent.com/image_collection/image_retrieval/bttf_poster_1985", 
         options: ["Ferris Bueller's Day Off", "The Goonies", "Back to the Future", "Short Circuit"] 
     },
     
@@ -42,7 +44,7 @@ const movieData = [
         title: "Pulp Fiction", 
         year: 1994, 
         correct: "A", 
-        image: "https://placehold.co/300x450/454545/FFFFFF?text=Pulp+Fiction+1994", 
+        image: "http://googleusercontent.com/image_collection/image_retrieval/pulpfiction_poster_1994", 
         options: ["Pulp Fiction", "Reservoir Dogs", "Snatch", "The Big Lebowski"] 
     },
     
@@ -52,7 +54,7 @@ const movieData = [
         title: "The Matrix", 
         year: 1999, 
         correct: "D", 
-        image: "https://placehold.co/300x450/111111/FFFFFF?text=The+Matrix+1999", 
+        image: "http://googleusercontent.com/image_collection/image_retrieval/matrix_poster_1999", 
         options: ["Terminator 2", "Inception", "Dark City", "The Matrix"] 
     },
     
@@ -62,7 +64,7 @@ const movieData = [
         title: "The Fellowship of the Ring", 
         year: 2001, 
         correct: "B", 
-        image: "https://placehold.co/300x450/777777/FFFFFF?text=LotR+2001", 
+        image: "http://googleusercontent.com/image_collection/image_retrieval/lotr_poster_2001", 
         options: ["Harry Potter", "The Fellowship of the Ring", "Narnia", "Eragon"] 
     },
     
@@ -72,7 +74,7 @@ const movieData = [
         title: "The Dark Knight", 
         year: 2008, 
         correct: "C", 
-        image: "https://placehold.co/300x450/333333/FFFFFF?text=The+Dark+Knight+2008", 
+        image: "http://googleusercontent.com/image_collection/image_retrieval/darkknight_poster_2008", 
         options: ["Batman Begins", "Man of Steel", "The Dark Knight", "Watchmen"] 
     },
     
@@ -82,7 +84,7 @@ const movieData = [
         title: "Inception", 
         year: 2010, 
         correct: "A", 
-        image: "https://placehold.co/300x450/666666/FFFFFF?text=Inception+2010", 
+        image: "http://googleusercontent.com/image_collection/image_retrieval/inception_poster_2010", 
         options: ["Inception", "Tenet", "Interstellar", "Shutter Island"] 
     },
     
@@ -92,7 +94,7 @@ const movieData = [
         title: "Inside Out", 
         year: 2015, 
         correct: "D", 
-        image: "https://placehold.co/300x450/999999/FFFFFF?text=Inside+Out+2015", 
+        image: "http://googleusercontent.com/image_collection/image_retrieval/insideout_poster_2015", 
         options: ["Coco", "Up", "Soul", "Inside Out"] 
     },
     
@@ -102,13 +104,9 @@ const movieData = [
         title: "Dune", 
         year: 2021, 
         correct: "B", 
-        image: "https://placehold.co/300x450/000000/FFFFFF?text=Dune+2021", 
+        image: "http://googleusercontent.com/image_collection/image_retrieval/dune_poster_2021", 
         options: ["Blade Runner 2049", "Dune", "Arrival", "Interstellar"] 
     },
-
-    // --------------------------------------------------------------------------------
-    // ROUNDS 11-25 (New Rounds for 25 total)
-    // --------------------------------------------------------------------------------
 
     // Round 11: 1980s Horror (The Shining - 1980)
     { 
@@ -116,7 +114,7 @@ const movieData = [
         title: "The Shining", 
         year: 1980, 
         correct: "C", 
-        image: "https://placehold.co/300x450/3c3c3c/CCCCCC?text=The+Shining+1980", 
+        image: "http://googleusercontent.com/image_collection/image_retrieval/shining_poster_1980", 
         options: ["Psycho", "Carrie", "The Shining", "Exorcist"] 
     },
 
@@ -126,7 +124,7 @@ const movieData = [
         title: "The Shawshank Redemption", 
         year: 1994, 
         correct: "A", 
-        image: "https://placehold.co/300x450/1c1c1c/AAAAAA?text=Shawshank+1994", 
+        image: "http://googleusercontent.com/image_collection/image_retrieval/shawshank_poster_1994", 
         options: ["The Shawshank Redemption", "Forrest Gump", "Pulp Fiction", "Green Mile"] 
     },
 
@@ -136,7 +134,7 @@ const movieData = [
         title: "Finding Nemo", 
         year: 2003, 
         correct: "B", 
-        image: "https://placehold.co/300x450/007FFF/E0FFFF?text=Finding+Nemo+2003", 
+        image: "http://googleusercontent.com/image_collection/image_retrieval/findingnemo_poster_2003", 
         options: ["Toy Story 3", "Finding Nemo", "Shrek", "Monsters Inc"] 
     },
 
@@ -146,7 +144,7 @@ const movieData = [
         title: "The Godfather Part II", 
         year: 1974, 
         correct: "D", 
-        image: "https://placehold.co/300x450/7A0019/FFC99A?text=Godfather+II+1974", 
+        image: "http://googleusercontent.com/image_collection/image_retrieval/godfather2_poster_1974", 
         options: ["Goodfellas", "The Untouchables", "Scarface", "The Godfather Part II"] 
     },
 
@@ -156,7 +154,7 @@ const movieData = [
         title: "Interstellar", 
         year: 2014, 
         correct: "B", 
-        image: "https://placehold.co/300x450/4B4E54/C0C0C0?text=Interstellar+2014", 
+        image: "http://googleusercontent.com/image_collection/image_retrieval/interstellar_poster_2014", 
         options: ["Gravity", "Interstellar", "Arrival", "The Martian"] 
     },
 
@@ -166,7 +164,7 @@ const movieData = [
         title: "Die Hard", 
         year: 1988, 
         correct: "A", 
-        image: "https://placehold.co/300x450/7F0000/F0F0F0?text=Die+Hard+1988", 
+        image: "http://googleusercontent.com/image_collection/image_retrieval/diehard_poster_1988", 
         options: ["Die Hard", "Lethal Weapon", "Terminator", "Total Recall"] 
     },
 
@@ -176,7 +174,7 @@ const movieData = [
         title: "Top Gun: Maverick", 
         year: 2022, 
         correct: "D", 
-        image: "https://placehold.co/300x450/003366/CCEEFF?text=Maverick+2022", 
+        image: "http://googleusercontent.com/image_collection/image_retrieval/topgun2_poster_2022", 
         options: ["Dune Part Two", "No Time to Die", "Oppenheimer", "Top Gun: Maverick"] 
     },
 
@@ -186,7 +184,7 @@ const movieData = [
         title: "The Silence of the Lambs", 
         year: 1991, 
         correct: "C", 
-        image: "https://placehold.co/300x450/505050/FFFFFF?text=Silence+1991", 
+        image: "http://googleusercontent.com/image_collection/image_retrieval/silence_poster_1991", 
         options: ["Se7en", "Fargo", "The Silence of the Lambs", "Usual Suspects"] 
     },
 
@@ -196,7 +194,7 @@ const movieData = [
         title: "Avatar", 
         year: 2009, 
         correct: "A", 
-        image: "https://placehold.co/300x450/004488/AADDFF?text=Avatar+2009", 
+        image: "http://googleusercontent.com/image_collection/image_retrieval/avatar_poster_2009", 
         options: ["Avatar", "District 9", "Star Trek", "Prometheus"] 
     },
 
@@ -206,7 +204,7 @@ const movieData = [
         title: "Alien", 
         year: 1979, 
         correct: "B", 
-        image: "https://placehold.co/300x450/000000/FF0000?text=Alien+1979", 
+        image: "http://googleusercontent.com/image_collection/image_retrieval/alien_poster_1979", 
         options: ["The Thing", "Alien", "Close Encounters", "Star Wars"] 
     },
 
@@ -216,7 +214,7 @@ const movieData = [
         title: "Raiders of the Lost Ark", 
         year: 1981, 
         correct: "D", 
-        image: "https://placehold.co/300x450/A37B3D/F5E6CA?text=Raiders+1981", 
+        image: "http://googleusercontent.com/image_collection/image_retrieval/raiders_poster_1981", 
         options: ["The Mummy", "Romancing the Stone", "Indiana Jones", "Raiders of the Lost Ark"] 
     },
 
@@ -226,7 +224,7 @@ const movieData = [
         title: "1917", 
         year: 2019, 
         correct: "C", 
-        image: "https://placehold.co/300x450/606060/F0F0F0?text=1917+2019", 
+        image: "http://googleusercontent.com/image_collection/image_retrieval/1917_poster_2019", 
         options: ["Dunkirk", "Saving Private Ryan", "1917", "Hacksaw Ridge"] 
     },
 
@@ -236,7 +234,7 @@ const movieData = [
         title: "Jurassic Park", 
         year: 1993, 
         correct: "A", 
-        image: "https://placehold.co/300x450/333333/C0C0C0?text=Jurassic+Park+1993", 
+        image: "http://googleusercontent.com/image_collection/image_retrieval/jurassicpark_poster_1993", 
         options: ["Jurassic Park", "Twister", "Godzilla", "Armageddon"] 
     },
 
@@ -246,7 +244,7 @@ const movieData = [
         title: "Oppenheimer", 
         year: 2023, 
         correct: "B", 
-        image: "https://placehold.co/300x450/000000/FFD700?text=Oppenheimer+2023", 
+        image: "http://googleusercontent.com/image_collection/image_retrieval/oppenheimer_poster_2023", 
         options: ["Tenet", "Oppenheimer", "The Martian", "Dunkirk"] 
     },
 
@@ -256,7 +254,7 @@ const movieData = [
         title: "Ghostbusters", 
         year: 1984, 
         correct: "D", 
-        image: "https://placehold.co/300x450/FF0000/FFFFFF?text=Ghostbusters+1984", 
+        image: "http://googleusercontent.com/image_collection/image_retrieval/ghostbusters_poster_1984", 
         options: ["Beetlejuice", "Gremlins", "E.T.", "Ghostbusters"] 
     }
 ];

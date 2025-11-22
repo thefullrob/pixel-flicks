@@ -1,12 +1,10 @@
 // This file contains the array of movie objects used by the Pixel Flicks game.
-// The "image" field URLs have been updated with retrieved public image links.
-// NOTE: Due to the complexity of embedding images from various hosts onto the Canvas element,
-// you might encounter CORS (Cross-Origin Resource Sharing) errors for some links. 
-// If an image fails to load, you may need to find a new public link or host the images yourself.
+// ACTION TAKEN: All image links now point to local files in the './images/' folder.
+// Ensure you have uploaded files named 1.jpg, 2.jpg, 3.jpg, etc., up to 25.jpg.
 
 const movieData = [
     // --------------------------------------------------------------------------------
-    // ROUNDS 1-25 (Updated with retrieved image URLs)
+    // ROUNDS 1-25 (Now using local paths: ./images/{id}.jpg)
     // --------------------------------------------------------------------------------
     // Round 1: 1970s Classic (Jaws - 1975)
     { 
@@ -14,7 +12,7 @@ const movieData = [
         title: "Jaws", 
         year: 1975, 
         correct: "A", 
-        image: "http://googleusercontent.com/image_collection/image_retrieval/jaws_poster_1975", 
+        image: "./images/1.jpg", 
         options: ["Jaws", "The Poseidon Adventure", "Deep Blue Sea", "Close Encounters"] 
     },
     
@@ -24,7 +22,7 @@ const movieData = [
         title: "E.T. the Extra-Terrestrial", 
         year: 1982, 
         correct: "B", 
-        image: "http://googleusercontent.com/image_collection/image_retrieval/et_poster_1982", 
+        image: "./images/2.jpg", 
         options: ["Gremlins", "E.T. the Extra-Terrestrial", "Flight of the Navigator", "Alien"] 
     },
     
@@ -34,7 +32,7 @@ const movieData = [
         title: "Back to the Future", 
         year: 1985, 
         correct: "C", 
-        image: "http://googleusercontent.com/image_collection/image_retrieval/bttf_poster_1985", 
+        image: "./images/3.jpg", 
         options: ["Ferris Bueller's Day Off", "The Goonies", "Back to the Future", "Short Circuit"] 
     },
     
@@ -44,7 +42,7 @@ const movieData = [
         title: "Pulp Fiction", 
         year: 1994, 
         correct: "A", 
-        image: "http://googleusercontent.com/image_collection/image_retrieval/pulpfiction_poster_1994", 
+        image: "./images/4.jpg", 
         options: ["Pulp Fiction", "Reservoir Dogs", "Snatch", "The Big Lebowski"] 
     },
     
@@ -54,7 +52,7 @@ const movieData = [
         title: "The Matrix", 
         year: 1999, 
         correct: "D", 
-        image: "http://googleusercontent.com/image_collection/image_retrieval/matrix_poster_1999", 
+        image: "./images/5.jpg", 
         options: ["Terminator 2", "Inception", "Dark City", "The Matrix"] 
     },
     
@@ -64,7 +62,7 @@ const movieData = [
         title: "The Fellowship of the Ring", 
         year: 2001, 
         correct: "B", 
-        image: "http://googleusercontent.com/image_collection/image_retrieval/lotr_poster_2001", 
+        image: "./images/6.jpg", 
         options: ["Harry Potter", "The Fellowship of the Ring", "Narnia", "Eragon"] 
     },
     
@@ -74,7 +72,7 @@ const movieData = [
         title: "The Dark Knight", 
         year: 2008, 
         correct: "C", 
-        image: "http://googleusercontent.com/image_collection/image_retrieval/darkknight_poster_2008", 
+        image: "./images/7.jpg", 
         options: ["Batman Begins", "Man of Steel", "The Dark Knight", "Watchmen"] 
     },
     
@@ -84,7 +82,7 @@ const movieData = [
         title: "Inception", 
         year: 2010, 
         correct: "A", 
-        image: "http://googleusercontent.com/image_collection/image_retrieval/inception_poster_2010", 
+        image: "./images/8.jpg", 
         options: ["Inception", "Tenet", "Interstellar", "Shutter Island"] 
     },
     
@@ -94,7 +92,7 @@ const movieData = [
         title: "Inside Out", 
         year: 2015, 
         correct: "D", 
-        image: "http://googleusercontent.com/image_collection/image_retrieval/insideout_poster_2015", 
+        image: "./images/9.jpg", 
         options: ["Coco", "Up", "Soul", "Inside Out"] 
     },
     
@@ -104,7 +102,7 @@ const movieData = [
         title: "Dune", 
         year: 2021, 
         correct: "B", 
-        image: "http://googleusercontent.com/image_collection/image_retrieval/dune_poster_2021", 
+        image: "./images/10.jpg", 
         options: ["Blade Runner 2049", "Dune", "Arrival", "Interstellar"] 
     },
 
@@ -114,7 +112,7 @@ const movieData = [
         title: "The Shining", 
         year: 1980, 
         correct: "C", 
-        image: "http://googleusercontent.com/image_collection/image_retrieval/shining_poster_1980", 
+        image: "./images/11.jpg", 
         options: ["Psycho", "Carrie", "The Shining", "Exorcist"] 
     },
 
@@ -124,7 +122,7 @@ const movieData = [
         title: "The Shawshank Redemption", 
         year: 1994, 
         correct: "A", 
-        image: "http://googleusercontent.com/image_collection/image_retrieval/shawshank_poster_1994", 
+        image: "./images/12.jpg", 
         options: ["The Shawshank Redemption", "Forrest Gump", "Pulp Fiction", "Green Mile"] 
     },
 
@@ -134,7 +132,7 @@ const movieData = [
         title: "Finding Nemo", 
         year: 2003, 
         correct: "B", 
-        image: "http://googleusercontent.com/image_collection/image_retrieval/findingnemo_poster_2003", 
+        image: "./images/13.jpg", 
         options: ["Toy Story 3", "Finding Nemo", "Shrek", "Monsters Inc"] 
     },
 
@@ -144,7 +142,7 @@ const movieData = [
         title: "The Godfather Part II", 
         year: 1974, 
         correct: "D", 
-        image: "http://googleusercontent.com/image_collection/image_retrieval/godfather2_poster_1974", 
+        image: "./images/14.jpg", 
         options: ["Goodfellas", "The Untouchables", "Scarface", "The Godfather Part II"] 
     },
 
@@ -154,7 +152,7 @@ const movieData = [
         title: "Interstellar", 
         year: 2014, 
         correct: "B", 
-        image: "http://googleusercontent.com/image_collection/image_retrieval/interstellar_poster_2014", 
+        image: "./images/15.jpg", 
         options: ["Gravity", "Interstellar", "Arrival", "The Martian"] 
     },
 
@@ -164,7 +162,7 @@ const movieData = [
         title: "Die Hard", 
         year: 1988, 
         correct: "A", 
-        image: "http://googleusercontent.com/image_collection/image_retrieval/diehard_poster_1988", 
+        image: "./images/16.jpg", 
         options: ["Die Hard", "Lethal Weapon", "Terminator", "Total Recall"] 
     },
 
@@ -174,7 +172,7 @@ const movieData = [
         title: "Top Gun: Maverick", 
         year: 2022, 
         correct: "D", 
-        image: "http://googleusercontent.com/image_collection/image_retrieval/topgun2_poster_2022", 
+        image: "./images/17.jpg", 
         options: ["Dune Part Two", "No Time to Die", "Oppenheimer", "Top Gun: Maverick"] 
     },
 
@@ -184,7 +182,7 @@ const movieData = [
         title: "The Silence of the Lambs", 
         year: 1991, 
         correct: "C", 
-        image: "http://googleusercontent.com/image_collection/image_retrieval/silence_poster_1991", 
+        image: "./images/18.jpg", 
         options: ["Se7en", "Fargo", "The Silence of the Lambs", "Usual Suspects"] 
     },
 
@@ -194,7 +192,7 @@ const movieData = [
         title: "Avatar", 
         year: 2009, 
         correct: "A", 
-        image: "http://googleusercontent.com/image_collection/image_retrieval/avatar_poster_2009", 
+        image: "./images/19.jpg", 
         options: ["Avatar", "District 9", "Star Trek", "Prometheus"] 
     },
 
@@ -204,7 +202,7 @@ const movieData = [
         title: "Alien", 
         year: 1979, 
         correct: "B", 
-        image: "http://googleusercontent.com/image_collection/image_retrieval/alien_poster_1979", 
+        image: "./images/20.jpg", 
         options: ["The Thing", "Alien", "Close Encounters", "Star Wars"] 
     },
 
@@ -214,7 +212,7 @@ const movieData = [
         title: "Raiders of the Lost Ark", 
         year: 1981, 
         correct: "D", 
-        image: "http://googleusercontent.com/image_collection/image_retrieval/raiders_poster_1981", 
+        image: "./images/21.jpg", 
         options: ["The Mummy", "Romancing the Stone", "Indiana Jones", "Raiders of the Lost Ark"] 
     },
 
@@ -224,7 +222,7 @@ const movieData = [
         title: "1917", 
         year: 2019, 
         correct: "C", 
-        image: "http://googleusercontent.com/image_collection/image_retrieval/1917_poster_2019", 
+        image: "./images/22.jpg", 
         options: ["Dunkirk", "Saving Private Ryan", "1917", "Hacksaw Ridge"] 
     },
 
@@ -234,7 +232,7 @@ const movieData = [
         title: "Jurassic Park", 
         year: 1993, 
         correct: "A", 
-        image: "http://googleusercontent.com/image_collection/image_retrieval/jurassicpark_poster_1993", 
+        image: "./images/23.jpg", 
         options: ["Jurassic Park", "Twister", "Godzilla", "Armageddon"] 
     },
 
@@ -244,7 +242,7 @@ const movieData = [
         title: "Oppenheimer", 
         year: 2023, 
         correct: "B", 
-        image: "http://googleusercontent.com/image_collection/image_retrieval/oppenheimer_poster_2023", 
+        image: "./images/24.jpg", 
         options: ["Tenet", "Oppenheimer", "The Martian", "Dunkirk"] 
     },
 
@@ -254,7 +252,7 @@ const movieData = [
         title: "Ghostbusters", 
         year: 1984, 
         correct: "D", 
-        image: "http://googleusercontent.com/image_collection/image_retrieval/ghostbusters_poster_1984", 
+        image: "./images/25.jpg", 
         options: ["Beetlejuice", "Gremlins", "E.T.", "Ghostbusters"] 
     }
 ];

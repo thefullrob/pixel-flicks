@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pixel Flicks: Movie Poster Quiz</title>
+    <title>Pixel Flicks: Movie Poster Quiz - 1P/2P</title>
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Load Tone.js for generating music -->
@@ -25,6 +25,7 @@
             background-color: #2d3748;
             border-radius: 1rem;
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+            position: relative; /* Needed for score animation positioning */
         }
         #posterCanvas {
             width: 100%;
@@ -61,6 +62,35 @@
             background-color: #3b82f6; /* Blue 500 */
             transition: width 1s linear;
         }
+
+        /* Score Animation Keyframes */
+        @keyframes score-fly {
+            0% {
+                opacity: 1;
+                transform: scale(1.5) translateY(0);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(0.5) translateY(-50px);
+            }
+        }
+
+        /* Score Animation Element Style */
+        .score-popup {
+            position: absolute;
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #34d399; /* Emerald Green */
+            animation: score-fly 1.5s ease-out forwards;
+            pointer-events: none;
+            z-index: 10;
+            text-shadow: 0 0 10px rgba(52, 211, 153, 0.7);
+        }
+
+        /* Player-specific styles */
+        .player-1-color { color: #fcd34d; } /* Amber */
+        .player-2-color { color: #60a5fa; } /* Blue */
+        .buzzer-ready { box-shadow: 0 0 15px #fcd34d, 0 0 15px #60a5fa; }
     </style>
 </head>
 <body>
@@ -79,38 +109,75 @@
             </button>
         </div>
 
-        <!-- Scoreboard and Timer -->
-        <div class="flex justify-between items-center mb-4 p-3 bg-gray-700 rounded-lg">
-            <div class="text-xl font-semibold">Score: <span id="totalScore">0</span></div>
-            <div class="text-xl font-semibold">Round: <span id="roundNumber">1</span></div>
-            <div class="text-xl font-semibold">Current Points: <span id="currentPoints">100</span></div>
-        </div>
-
-        <!-- Timer Bar -->
-        <div class="mb-4">
-            <p class="text-sm text-gray-400 mb-1">Time Remaining: <span id="timeLeftDisplay">15</span>s</p>
-            <div class="timer-bar-bg">
-                <div id="timerBar" style="width: 100%;"></div>
-            </div>
-        </div>
-        
-        <!-- Poster Canvas Area -->
-        <div class="flex justify-center">
-            <!-- Canvas is set to a fixed aspect ratio for poster display -->
-            <canvas id="posterCanvas" width="300" height="450" class="rounded-lg shadow-xl"></canvas>
-        </div>
-
-        <!-- Status Message and Start/Next Button -->
-        <div class="text-center my-4">
-            <p id="statusMessage" class="text-lg font-medium min-h-[1.5rem]"></p>
-            <button id="nextButton" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-full mt-2 hidden" onclick="nextRound()">
-                Start Game
+        <!-- Mode Selection Screen (Initially Visible) -->
+        <div id="modeSelection" class="text-center">
+            <h2 class="text-2xl font-bold mb-4 text-white">Choose Your Game Mode</h2>
+            <button class="px-6 py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded-full mb-3 w-full sm:w-2/3" onclick="startGame('1P')">
+                1-Player Mode (Standard Scoring)
+            </button>
+            <button class="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-full w-full sm:w-2/3" onclick="startGame('2P')">
+                2-Player Mode (Hotseat Buzzer: Q vs P)
             </button>
         </div>
+        
+        <!-- Game Content (Initially Hidden) -->
+        <div id="gameContent" class="hidden">
+            
+            <!-- Scoreboard and Timer -->
+            <div id="scoreboard" class="flex flex-col gap-3 mb-4 p-3 bg-gray-700 rounded-lg">
+                
+                <!-- 1P Score Display -->
+                <div id="scoreDisplay1P" class="flex justify-between items-center hidden">
+                    <div class="text-xl font-semibold player-1-color">
+                        Score: <span id="totalScore1P">0</span> 
+                    </div>
+                </div>
 
-        <!-- Multiple Choice Buttons -->
-        <div id="choicesContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
-            <!-- Buttons will be dynamically added here -->
+                <!-- 2P Score Display -->
+                <div id="scoreDisplay2P" class="flex justify-between items-center hidden">
+                    <div class="text-xl font-semibold player-1-color">
+                        P1 Score: <span id="totalScoreP1">0</span> 
+                        <span id="buzzerP1" class="text-xs ml-2 py-0.5 px-1 bg-gray-600 rounded">Q-BUZZER</span>
+                    </div>
+                    <div class="text-xl font-semibold player-2-color">
+                        P2 Score: <span id="totalScoreP2">0</span>
+                        <span id="buzzerP2" class="text-xs ml-2 py-0.5 px-1 bg-gray-600 rounded">P-BUZZER</span>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center">
+                    <div class="text-xl font-semibold">Round: <span id="roundNumber">1</span></div>
+                    <div class="text-xl font-semibold">Current Points: <span id="currentPoints">100</span></div>
+                </div>
+                
+            </div>
+
+            <!-- Timer Bar -->
+            <div class="mb-4">
+                <p class="text-sm text-gray-400 mb-1">Time Remaining: <span id="timeLeftDisplay">15</span>s</p>
+                <div class="timer-bar-bg">
+                    <div id="timerBar" style="width: 100%;"></div>
+                </div>
+            </div>
+            
+            <!-- Poster Canvas Area -->
+            <div class="flex justify-center">
+                <!-- Canvas is set to a fixed aspect ratio for poster display -->
+                <canvas id="posterCanvas" width="300" height="450" class="rounded-lg shadow-xl"></canvas>
+            </div>
+
+            <!-- Status Message and Start/Next Button -->
+            <div class="text-center my-4">
+                <p id="statusMessage" class="text-lg font-medium min-h-[1.5rem]"></p>
+                <button id="nextButton" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-full mt-2" onclick="nextRound()">
+                    Start Round
+                </button>
+            </div>
+
+            <!-- Multiple Choice Buttons -->
+            <div id="choicesContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+                <!-- Buttons will be dynamically added here -->
+            </div>
         </div>
 
     </div>
@@ -160,13 +227,31 @@
         const musicButtonEl = document.getElementById('musicButton');
         const musicIconEl = document.getElementById('musicIcon');
 
-        // Simple, repetitive, suspenseful loop
+        // Sound effects synths
+        let winSynth = null;
+        let loseSynth = null;
+
         function setupMusic() {
             if (synth || !window.Tone) return;
 
-            // Use a simple FM synth for a sci-fi/suspense feel
+            // Background Music Synth
             synth = new Tone.FMSynth().toDestination();
             synth.volume.value = -12; // Keep volume moderate
+
+            // Win Sound Synth (Simple triangle wave for a chime)
+            winSynth = new Tone.Synth({ 
+                oscillator: { type: "triangle" },
+                envelope: { attack: 0.01, decay: 0.2, sustain: 0, release: 0.5 }
+            }).toDestination();
+            winSynth.volume.value = -8;
+
+            // Lose Sound Synth (Low bass for a fail noise)
+            loseSynth = new Tone.Synth({
+                oscillator: { type: "sine" },
+                envelope: { attack: 0.1, decay: 0.5, sustain: 0, release: 0.5 }
+            }).toDestination();
+            loseSynth.volume.value = -6;
+
 
             // Define a simple looping progression (notes: C4, C3, F3, F2)
             const notes = ["C3", "C2", "F2", "F1"]; 
@@ -182,6 +267,20 @@
             Tone.Transport.loop = true;
             Tone.Transport.loopEnd = '4m';
         }
+        
+        // Play sound based on result
+        function playSound(isCorrect) {
+            if (isMuted) return;
+            
+            if (isCorrect) {
+                // Play a happy rising chord (C5, E5, G5)
+                winSynth.triggerAttackRelease(["C5", "E5", "G5"], "8n");
+            } else {
+                // Play a disappointing low chord (C2, G1)
+                loseSynth.triggerAttackRelease(["C2", "G1"], "4n");
+            }
+        }
+
 
         async function toggleMusic() {
             // First time a user clicks, we start the audio context
@@ -212,7 +311,11 @@
 
         // --- Game State Variables ---
         let gameState = {
-            totalScore: 0,
+            mode: '1P', // NEW: '1P' or '2P'
+            totalScore1P: 0, // NEW: Single Player Score
+            totalScoreP1: 0, // Player 1 score (2P)
+            totalScoreP2: 0, // Player 2 score (2P)
+            buzzerLockedBy: null, // Stores 'P1' or 'P2' if someone buzzed
             round: 0,
             currentMovie: null,
             timerInterval: null,
@@ -223,7 +326,17 @@
         };
         
         // --- DOM References ---
-        const totalScoreEl = document.getElementById('totalScore');
+        const modeSelectionEl = document.getElementById('modeSelection');
+        const gameContentEl = document.getElementById('gameContent');
+        const scoreDisplay1PEl = document.getElementById('scoreDisplay1P');
+        const scoreDisplay2PEl = document.getElementById('scoreDisplay2P');
+        
+        const totalScore1PEl = document.getElementById('totalScore1P'); // NEW
+        const totalScoreP1El = document.getElementById('totalScoreP1'); 
+        const totalScoreP2El = document.getElementById('totalScoreP2'); 
+        const buzzerP1El = document.getElementById('buzzerP1'); 
+        const buzzerP2El = document.getElementById('buzzerP2'); 
+        
         const roundNumberEl = document.getElementById('roundNumber');
         const currentPointsEl = document.getElementById('currentPoints');
         const timeLeftDisplayEl = document.getElementById('timeLeftDisplay');
@@ -237,34 +350,94 @@
         const CANVAS_H = canvas.height;
         const CHUNK_SIZE = 15; // Size of the square chunks for reveal effect
 
-        // --- Initialization and Utility ---
+        // --- Keyboard Controls (2P Only) ---
+        document.addEventListener('keydown', (e) => {
+            if (gameState.mode !== '2P' || gameState.isGameOver || gameState.buzzerLockedBy) return;
+
+            // Player 1 Buzzer: 'Q'
+            if (e.key.toLowerCase() === 'q') {
+                buzzIn('P1');
+            } 
+            // Player 2 Buzzer: 'P'
+            else if (e.key.toLowerCase() === 'p') {
+                buzzIn('P2');
+            }
+        });
+
+        function buzzIn(player) {
+            if (gameState.isGameOver || gameState.buzzerLockedBy) return;
+
+            gameState.buzzerLockedBy = player;
+            clearInterval(gameState.timerInterval); // Stop the timer immediately
+            
+            // Visual feedback
+            const buzzerEl = player === 'P1' ? buzzerP1El : buzzerP2El;
+            buzzerEl.textContent = `${player} GUESSING...`;
+            buzzerEl.classList.remove('bg-gray-600');
+            buzzerEl.classList.add('bg-yellow-600', 'animate-pulse');
+
+            statusMessageEl.textContent = `${player} buzzed in! Select your answer now.`;
+            statusMessageEl.classList.remove('text-red-400', 'text-green-400');
+            statusMessageEl.classList.add(player === 'P1' ? 'player-1-color' : 'player-2-color');
+        }
+
+        function resetBuzzer() {
+            gameState.buzzerLockedBy = null;
+            if (gameState.mode === '2P') {
+                buzzerP1El.textContent = 'Q-BUZZER';
+                buzzerP2El.textContent = 'P-BUZZER';
+                buzzerP1El.classList.remove('bg-yellow-600', 'animate-pulse');
+                buzzerP2El.classList.remove('bg-yellow-600', 'animate-pulse');
+                buzzerP1El.classList.add('bg-gray-600');
+                buzzerP2El.classList.add('bg-gray-600');
+            }
+        }
+
+        // --- Initialization and Mode Selection ---
 
         window.onload = () => {
-            statusMessageEl.textContent = 'Welcome to Pixel Flicks! Click START to begin.';
-            nextButtonEl.textContent = 'Start Game';
-            nextButtonEl.classList.remove('hidden');
+            // Setup music synths, but leave muted
+            setupMusic();
+            Tone.Transport.stop(); 
+            isMuted = true;
+            musicIconEl.innerHTML = '&#128263;'; 
+            musicButtonEl.textContent = ' Music OFF';
+            musicButtonEl.prepend(musicIconEl);
             
-            // Draw initial blurred poster using the first image (which should fail, showing the red box)
+            // Show mode selection screen
+            modeSelectionEl.classList.remove('hidden');
+            gameContentEl.classList.add('hidden');
+
+            // Draw initial placeholder
             if (movieData.length > 0) {
                  drawPoster(movieData[0].image, true);
             } else {
-                 // Fallback if movieData is empty
                  drawPoster("https://placehold.co/300x450/222222/cccccc?text=Loading+Data...", true);
             }
-            
-            // Initialize Tone.js but keep it muted until the user interacts
-            setupMusic();
-            Tone.Transport.stop(); // Ensure it starts paused
-            isMuted = true;
-            musicIconEl.innerHTML = '&#128263;'; // Mute icon
-            musicButtonEl.textContent = ' Music OFF';
-            musicButtonEl.prepend(musicIconEl);
         };
+
+        function startGame(mode) {
+            gameState.mode = mode;
+            
+            // Hide selection, show game content
+            modeSelectionEl.classList.add('hidden');
+            gameContentEl.classList.remove('hidden');
+
+            // Set up the correct scoreboard display
+            scoreDisplay1PEl.classList.add('hidden');
+            scoreDisplay2PEl.classList.add('hidden');
+            
+            if (mode === '1P') {
+                scoreDisplay1PEl.classList.remove('hidden');
+                statusMessageEl.textContent = 'Click START ROUND to begin!';
+            } else {
+                scoreDisplay2PEl.classList.remove('hidden');
+                statusMessageEl.textContent = 'Players ready! P1: Q, P2: P to buzz in.';
+            }
+        }
         
         /**
          * Calculates the score based on remaining time.
-         * Score decays linearly from MAX_SCORE (100) to 0.
-         * @returns {number} The calculated score.
          */
         function calculateScore() {
             if (gameState.timeLeft <= 0) return 0;
@@ -286,8 +459,6 @@
 
         /**
          * Draws the poster image onto the canvas and initializes the pixelation grid.
-         * @param {string} url - The image URL.
-         * @param {boolean} pixelate - If true, initializes the cover for revealing.
          */
         function drawPoster(url, pixelate = false) {
             ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
@@ -318,7 +489,7 @@
                 ctx.font = '16px Inter';
                 ctx.textAlign = 'center';
                 ctx.fillText('ERROR LOADING IMAGE', CANVAS_W / 2, CANVAS_H / 2 - 10);
-                ctx.fillText('Check 1.jpg in /images folder', CANVAS_W / 2, CANVAS_H / 2 + 10);
+                ctx.fillText(`Check round ${gameState.round}.jpg in /images folder`, CANVAS_W / 2, CANVAS_H / 2 + 10);
             };
             // Set cross-origin to anonymous for canvas image usage 
             gameState.posterImage.crossOrigin = "anonymous"; 
@@ -330,29 +501,24 @@
          */
         function revealPosterPiece() {
             // Calculate how many pieces should be revealed based on time remaining
-            // Reveal amount is (Total Time - Time Left) / Total Time
             const timeElapsedRatio = (TIMER_MAX - gameState.timeLeft) / TIMER_MAX;
             
-            // Only reveal if the elapsed ratio is less than the REVEAL_LIMIT (70%)
             if (timeElapsedRatio >= REVEAL_LIMIT) return;
 
-            // Calculate the target number of chunks to reveal
             const totalChunks = gameState.pixelatedChunks.length;
             const targetIndex = Math.floor(totalChunks * timeElapsedRatio);
 
-            // Reveal up to the target index if not already revealed
             for (let i = 0; i < targetIndex; i++) {
                 const chunk = gameState.pixelatedChunks[i];
                 if (!chunk.revealed) {
-                    // This is the "reveal" step: just redraw the image over the cover chunk
-                    const sx = chunk.x; // Source X
-                    const sy = chunk.y; // Source Y
-                    const sw = CHUNK_SIZE; // Source Width
-                    const sh = CHUNK_SIZE; // Source Height
-                    const dx = chunk.x; // Destination X
-                    const dy = chunk.y; // Destination Y
-                    const dw = CHUNK_SIZE; // Destination Width
-                    const dh = CHUNK_SIZE; // Destination Height
+                    const sx = chunk.x; 
+                    const sy = chunk.y; 
+                    const sw = CHUNK_SIZE; 
+                    const sh = CHUNK_SIZE; 
+                    const dx = chunk.x; 
+                    const dy = chunk.y; 
+                    const dw = CHUNK_SIZE; 
+                    const dh = CHUNK_SIZE; 
 
                     ctx.drawImage(gameState.posterImage, sx, sy, sw, sh, dx, dy, dw, dh);
                     chunk.revealed = true;
@@ -365,27 +531,21 @@
          */
         function fullReveal() {
             ctx.drawImage(gameState.posterImage, 0, 0, CANVAS_W, CANVAS_H);
-            // Mark all chunks as revealed
             gameState.pixelatedChunks.forEach(chunk => chunk.revealed = true);
         }
 
         // --- Game Flow Functions ---
 
-        /**
-         * Starts the timer and the reveal mechanic.
-         */
         function startTimer() {
             gameState.timeLeft = TIMER_MAX;
             gameState.timerInterval = setInterval(() => {
                 gameState.timeLeft -= 1;
                 
-                // Update score and UI
                 const currentScore = calculateScore();
                 currentPointsEl.textContent = currentScore;
                 timeLeftDisplayEl.textContent = gameState.timeLeft;
                 timerBarEl.style.width = `${(gameState.timeLeft / TIMER_MAX) * 100}%`;
                 
-                // Reveal a piece of the poster
                 revealPosterPiece();
 
                 if (gameState.timeLeft <= 0) {
@@ -394,12 +554,8 @@
             }, 1000);
         }
 
-        /**
-         * Sets up the UI and data for the next round.
-         */
         function nextRound() {
-            // Safety check for movieData before starting
-             if (typeof movieData === 'undefined' || movieData.length === 0) {
+            if (typeof movieData === 'undefined' || movieData.length === 0) {
                 statusMessageEl.textContent = "Error: Movie data failed to load. Please check movie-data.js file.";
                 nextButtonEl.textContent = 'Data Error';
                 nextButtonEl.classList.remove('hidden');
@@ -407,41 +563,57 @@
             }
 
             if (gameState.round >= movieData.length) {
-                // Game over, no more movies
-                statusMessageEl.textContent = `Game Over! Final Score: ${gameState.totalScore}. Click restart to play again.`;
-                nextButtonEl.textContent = 'Restart Game';
-                gameState.round = 0; // Prepare for restart
-                gameState.totalScore = 0;
-                totalScoreEl.textContent = '0';
+                // Game over
+                let finalScoreMessage;
+                if (gameState.mode === '1P') {
+                    finalScoreMessage = `GAME OVER! Your Final Score: ${gameState.totalScore1P}.`;
+                } else {
+                    let winnerText = "It's a TIE!";
+                    if (gameState.totalScoreP1 > gameState.totalScoreP2) {
+                        winnerText = "Player 1 WINS!";
+                    } else if (gameState.totalScoreP2 > gameState.totalScoreP1) {
+                        winnerText = "Player 2 WINS!";
+                    }
+                    finalScoreMessage = `GAME OVER! Final Score - P1: ${gameState.totalScoreP1}, P2: ${gameState.totalScoreP2}. ${winnerText}`;
+                }
+                
+                statusMessageEl.textContent = finalScoreMessage;
+                nextButtonEl.textContent = 'Play Again';
+                
+                // Reset Scores
+                gameState.round = 0;
+                gameState.totalScore1P = 0;
+                gameState.totalScoreP1 = 0;
+                gameState.totalScoreP2 = 0;
                 return;
             }
             
-            // Setup for new round
             gameState.isGameOver = false;
             gameState.round++;
             gameState.currentMovie = movieData[gameState.round - 1];
 
-            // Reset UI
+            // Reset UI and Buzzer State
+            resetBuzzer();
             clearInterval(gameState.timerInterval);
             currentPointsEl.textContent = MAX_SCORE;
             roundNumberEl.textContent = gameState.round;
-            statusMessageEl.textContent = `Round ${gameState.round} of ${movieData.length}. Guess the movie!`;
+            
+            let roundStartMessage;
+            if (gameState.mode === '1P') {
+                roundStartMessage = `Round ${gameState.round} of ${movieData.length}. Guess the movie!`;
+            } else {
+                roundStartMessage = `Round ${gameState.round} of ${movieData.length}. Buzz in (Q or P) to guess!`;
+            }
+            statusMessageEl.textContent = roundStartMessage;
+            statusMessageEl.classList.remove('text-red-400', 'text-green-400', 'player-1-color', 'player-2-color');
             nextButtonEl.classList.add('hidden');
             
-            // Set up poster
             drawPoster(gameState.currentMovie.image, true);
-            
-            // Set up choice buttons
             renderChoices(gameState.currentMovie.options);
             
-            // Start the clock
             startTimer();
         }
 
-        /**
-         * Renders the multiple choice buttons.
-         * @param {Array<string>} choices - Array of movie title strings.
-         */
         function renderChoices(choices) {
             choicesContainerEl.innerHTML = '';
             const optionsMap = ['A', 'B', 'C', 'D'];
@@ -451,70 +623,151 @@
                 const button = document.createElement('button');
                 button.className = 'choice-button px-4 py-3 bg-blue-600 text-white font-semibold rounded-lg text-left';
                 button.setAttribute('data-choice', optionChar);
+                
+                // Click handler changes based on mode
+                if (gameState.mode === '1P') {
+                    button.onclick = (e) => checkAnswer(optionChar, e.currentTarget, '1P');
+                } else {
+                    button.onclick = (e) => checkAnswer(optionChar, e.currentTarget, gameState.buzzerLockedBy);
+                }
+                
                 button.textContent = `${optionChar}) ${title} (${gameState.currentMovie.year})`;
-                button.onclick = () => checkAnswer(optionChar, button);
                 choicesContainerEl.appendChild(button);
             });
         }
 
-        /**
-         * Processes the player's guess.
-         * @param {string} chosenOption - The letter chosen (A, B, C, or D).
-         * @param {HTMLElement} button - The button element that was clicked.
-         */
-        function checkAnswer(chosenOption, button) {
-            if (gameState.isGameOver) return; // Prevent guessing after round ends
+        function checkAnswer(chosenOption, button, guessingPlayer) {
+            clearInterval(gameState.timerInterval); // Pause timer
+            
+            // Enforcement based on mode
+            if (gameState.mode === '2P' && !guessingPlayer) {
+                statusMessageEl.textContent = "Error: Buzz in (Q or P) first!";
+                statusMessageEl.classList.add('text-red-400');
+                startTimer(); // Restart timer after error message
+                return;
+            }
 
-            clearInterval(gameState.timerInterval); // Stop the timer
-
+            if (gameState.isGameOver) return; 
+            
             const isCorrect = chosenOption === gameState.currentMovie.correct;
-            endRound(isCorrect, button);
+            endRound(isCorrect, button, guessingPlayer);
         }
 
         /**
          * Ends the current round, updates score, and shows the result.
-         * @param {boolean} isCorrect - Whether the guess was correct.
-         * @param {HTMLElement} clickedButton - The button that was clicked (optional).
          */
-        function endRound(isCorrect, clickedButton = null) {
+        function endRound(isCorrect, clickedButton = null, scoringTarget = '1P') {
             gameState.isGameOver = true;
+            
+            // Play sound feedback
+            playSound(isCorrect);
             
             // Full poster reveal
             fullReveal();
+
+            let roundPoints = 0;
+            let statusPlayer = (scoringTarget === 'P1' || scoringTarget === 'P2') ? scoringTarget : 'You';
             
-            // Disable all choice buttons
+            if (isCorrect) {
+                roundPoints = calculateScore();
+                
+                // Assign score based on mode/player
+                if (scoringTarget === '1P') {
+                    gameState.totalScore1P += roundPoints;
+                    totalScore1PEl.textContent = gameState.totalScore1P;
+                } else if (scoringTarget === 'P1') {
+                    gameState.totalScoreP1 += roundPoints;
+                    totalScoreP1El.textContent = gameState.totalScoreP1;
+                } else if (scoringTarget === 'P2') {
+                    gameState.totalScoreP2 += roundPoints;
+                    totalScoreP2El.textContent = gameState.totalScoreP2;
+                }
+                
+                // ANMATION: Trigger score celebration on correct guess
+                if (roundPoints > 0) {
+                    animateScorePopup(roundPoints, scoringTarget);
+                }
+                
+                statusMessageEl.textContent = `${statusPlayer} is CORRECT! Earned ${roundPoints} points!`;
+                statusMessageEl.classList.remove('text-red-400');
+                statusMessageEl.classList.add('text-green-400');
+            } else {
+                // Incorrect guess or time up
+                if (scoringTarget === 'P1' || scoringTarget === 'P2') {
+                    // 2P penalty only applies if a player buzzed in (not if time ran out)
+                    if (gameState.buzzerLockedBy) { 
+                        const penalty = 10;
+                        if (scoringTarget === 'P1') gameState.totalScoreP1 = Math.max(0, gameState.totalScoreP1 - penalty);
+                        if (scoringTarget === 'P2') gameState.totalScoreP2 = Math.max(0, gameState.totalScoreP2 - penalty);
+                        totalScoreP1El.textContent = gameState.totalScoreP1;
+                        totalScoreP2El.textContent = gameState.totalScoreP2;
+                        statusMessageEl.textContent = `${statusPlayer} is INCORRECT! (-${penalty} pts). The answer was "${gameState.currentMovie.title}".`;
+                    } else {
+                         statusMessageEl.textContent = `TIME UP! The answer was "${gameState.currentMovie.title}".`;
+                    }
+                } else {
+                    // 1P or time up message
+                    statusMessageEl.textContent = `TIME UP / INCORRECT! The answer was "${gameState.currentMovie.title}".`;
+                }
+                statusMessageEl.classList.add('text-red-400');
+                statusMessageEl.classList.remove('text-green-400');
+            }
+            
+            // Update current points display
+            currentPointsEl.textContent = roundPoints;
+
+            // Highlight buttons
             Array.from(choicesContainerEl.children).forEach(btn => {
                 btn.disabled = true;
                 const choice = btn.getAttribute('data-choice');
-                // Highlight correct answer in green
                 if (choice === gameState.currentMovie.correct) {
                     btn.classList.add('correct');
                     btn.classList.remove('bg-blue-600');
                 } else if (btn === clickedButton) {
-                    // Highlight incorrect choice in red
                     btn.classList.add('incorrect');
                     btn.classList.remove('bg-blue-600');
                 }
             });
 
-            let roundPoints = 0;
-            if (isCorrect) {
-                roundPoints = calculateScore();
-                gameState.totalScore += roundPoints;
-                statusMessageEl.textContent = `CORRECT! You earned ${roundPoints} points!`;
-                statusMessageEl.classList.add('text-green-400');
-                statusMessageEl.classList.remove('text-red-400');
-            } else {
-                statusMessageEl.textContent = `TIME UP / INCORRECT! The answer was "${gameState.currentMovie.title}".`;
-                statusMessageEl.classList.add('text-red-400');
-                statusMessageEl.classList.remove('text-green-400');
-            }
-            
-            // Update UI
-            totalScoreEl.textContent = gameState.totalScore;
-            currentPointsEl.textContent = roundPoints;
             nextButtonEl.classList.remove('hidden');
             nextButtonEl.textContent = (gameState.round < movieData.length) ? 'Next Poster' : 'Finish Game';
+        }
+
+        /**
+         * ANIMATION FUNCTION: Creates and animates a score popup.
+         */
+        function animateScorePopup(points, target) {
+            const popup = document.createElement('span');
+            popup.textContent = `+${points}`;
+            popup.classList.add('score-popup');
+            
+            const gameApp = document.getElementById('game-app');
+            gameApp.appendChild(popup);
+
+            let targetEl;
+            if (target === '1P') {
+                targetEl = totalScore1PEl;
+                popup.style.color = '#fcd34d'; 
+            } else if (target === 'P1') {
+                targetEl = totalScoreP1El;
+                popup.style.color = '#fcd34d'; // Player 1 color
+            } else { // P2
+                targetEl = totalScoreP2El;
+                popup.style.color = '#60a5fa'; // Player 2 color
+            }
+
+            // Measure the target element's position relative to the game container
+            const targetRect = targetEl.getBoundingClientRect();
+            const gameRect = gameApp.getBoundingClientRect();
+            
+            // Calculate starting position near the target score display
+            popup.style.top = `${targetRect.top - gameRect.top}px`;
+            popup.style.left = `${targetRect.left - gameRect.left}px`;
+
+            // Clean up the element after the animation finishes
+            popup.addEventListener('animationend', () => {
+                popup.remove();
+            });
         }
 
     </script>

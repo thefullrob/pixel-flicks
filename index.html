@@ -6,6 +6,8 @@
     <title>Pixel Flicks: Movie Poster Quiz</title>
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Tone.js for generating music -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -65,9 +67,17 @@
 
     <div id="game-app" class="game-container p-6 text-white">
 
-        <h1 class="text-4xl font-extrabold text-center mb-6 text-yellow-400">
-            Pixel Flicks
-        </h1>
+        <!-- Header and Music Button -->
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-4xl font-extrabold text-yellow-400">
+                Pixel Flicks
+            </h1>
+            <button id="musicButton" 
+                    class="px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-full text-sm transition duration-150"
+                    onclick="toggleMusic()">
+                <span id="musicIcon">&#128266;</span> Music ON
+            </button>
+        </div>
 
         <!-- Scoreboard and Timer -->
         <div class="flex justify-between items-center mb-4 p-3 bg-gray-700 rounded-lg">
@@ -105,27 +115,100 @@
 
     </div>
 
+    <!-- 
+        NOTE: Since this is running locally inside the chat environment, 
+        we must include the data array directly here instead of using the external link 
+        like <script src="./movie-data.js"></script>.
+    -->
     <script>
-        // --- Configuration and Mock Data ---
+        // --- DATA INTEGRATION (Temporary for local preview) ---
+        // This is the content of your movie-data.js file:
+        const movieData = [
+            // Using placeholder links that should fail, proving the local link system works when you upload 1.jpg
+            { id: 1, title: "Jaws", year: 1975, correct: "A", image: "./images/1.jpg", options: ["Jaws", "The Poseidon Adventure", "Deep Blue Sea", "Close Encounters"] },
+            { id: 2, title: "E.T. the Extra-Terrestrial", year: 1982, correct: "B", image: "./images/2.jpg", options: ["Gremlins", "E.T. the Extra-Terrestrial", "Flight of the Navigator", "Alien"] },
+            { id: 3, title: "Back to the Future", year: 1985, correct: "C", image: "./images/3.jpg", options: ["Ferris Bueller's Day Off", "The Goonies", "Back to the Future", "Short Circuit"] },
+            { id: 4, title: "Pulp Fiction", year: 1994, correct: "A", image: "./images/4.jpg", options: ["Pulp Fiction", "Reservoir Dogs", "Snatch", "The Big Lebowski"] },
+            { id: 5, title: "The Matrix", year: 1999, correct: "D", image: "./images/5.jpg", options: ["Terminator 2", "Inception", "Dark City", "The Matrix"] },
+            { id: 6, title: "The Fellowship of the Ring", year: 2001, correct: "B", image: "./images/6.jpg", options: ["Harry Potter", "The Fellowship of the Ring", "Narnia", "Eragon"] },
+            { id: 7, title: "The Dark Knight", year: 2008, correct: "C", image: "./images/7.jpg", options: ["Batman Begins", "Man of Steel", "The Dark Knight", "Watchmen"] },
+            { id: 8, title: "Inception", year: 2010, correct: "A", image: "./images/8.jpg", options: ["Inception", "Tenet", "Interstellar", "Shutter Island"] },
+            { id: 9, title: "Inside Out", year: 2015, correct: "D", image: "./images/9.jpg", options: ["Coco", "Up", "Soul", "Inside Out"] },
+            { id: 10, title: "Dune", year: 2021, correct: "B", image: "./images/10.jpg", options: ["Blade Runner 2049", "Dune", "Arrival", "Interstellar"] },
+            { id: 11, title: "The Shining", year: 1980, correct: "C", image: "./images/11.jpg", options: ["Psycho", "Carrie", "The Shining", "Exorcist"] },
+            { id: 12, title: "The Shawshank Redemption", year: 1994, correct: "A", image: "./images/12.jpg", options: ["The Shawshank Redemption", "Forrest Gump", "Pulp Fiction", "Green Mile"] },
+            { id: 13, title: "Finding Nemo", year: 2003, correct: "B", image: "./images/13.jpg", options: ["Toy Story 3", "Finding Nemo", "Shrek", "Monsters Inc"] },
+            { id: 14, title: "The Godfather Part II", year: 1974, correct: "D", image: "./images/14.jpg", options: ["Goodfellas", "The Untouchables", "Scarface", "The Godfather Part II"] },
+            { id: 15, title: "Interstellar", year: 2014, correct: "B", image: "./images/15.jpg", options: ["Gravity", "Interstellar", "Arrival", "The Martian"] },
+            { id: 16, title: "Die Hard", year: 1988, correct: "A", image: "./images/16.jpg", options: ["Die Hard", "Lethal Weapon", "Terminator", "Total Recall"] },
+            { id: 17, title: "Top Gun: Maverick", year: 2022, correct: "D", image: "./images/17.jpg", options: ["Dune Part Two", "No Time to Die", "Oppenheimer", "Top Gun: Maverick"] },
+            { id: 18, title: "The Silence of the Lambs", year: 1991, correct: "C", image: "./images/18.jpg", options: ["Se7en", "Fargo", "The Silence of the Lambs", "Usual Suspects"] },
+            { id: 19, title: "Avatar", year: 2009, correct: "A", image: "./images/19.jpg", options: ["Avatar", "District 9", "Star Trek", "Prometheus"] },
+            { id: 20, title: "Alien", year: 1979, correct: "B", image: "./images/20.jpg", options: ["The Thing", "Alien", "Close Encounters", "Star Wars"] },
+            { id: 21, title: "Raiders of the Lost Ark", year: 1981, correct: "D", image: "./images/21.jpg", options: ["The Mummy", "Romancing the Stone", "Indiana Jones", "Raiders of the Lost Ark"] },
+            { id: 22, title: "1917", year: 2019, correct: "C", image: "./images/22.jpg", options: ["Dunkirk", "Saving Private Ryan", "1917", "Hacksaw Ridge"] },
+            { id: 23, title: "Jurassic Park", year: 1993, correct: "A", image: "./images/23.jpg", options: ["Jurassic Park", "Twister", "Godzilla", "Armageddon"] },
+            { id: 24, "title": "Oppenheimer", year: 2023, correct: "B", image: "./images/24.jpg", options: ["Tenet", "Oppenheimer", "The Martian", "Dunkirk"] },
+            { id: 25, title: "Ghostbusters", year: 1984, correct: "D", image: "./images/25.jpg", options: ["Beetlejuice", "Gremlins", "E.T.", "Ghostbusters"] }
+        ];
+
+        // --- Tone.js (Audio) Setup ---
+        let musicActive = false;
+        let isMuted = false;
+        let synth = null;
+        let loop = null;
+        const musicButtonEl = document.getElementById('musicButton');
+        const musicIconEl = document.getElementById('musicIcon');
+
+        // Simple, repetitive, suspenseful loop
+        function setupMusic() {
+            if (synth || !window.Tone) return;
+
+            // Use a simple FM synth for a sci-fi/suspense feel
+            synth = new Tone.FMSynth().toDestination();
+            synth.volume.value = -12; // Keep volume moderate
+
+            // Define a simple looping progression (notes: C4, C3, F3, F2)
+            const notes = ["C3", "C2", "F2", "F1"]; 
+            let index = 0;
+
+            loop = new Tone.Loop(time => {
+                const note = notes[index % notes.length];
+                synth.triggerAttackRelease(note, "4n", time);
+                index++;
+            }, "1m").start(0);
+
+            Tone.Transport.bpm.value = 60;
+            Tone.Transport.loop = true;
+            Tone.Transport.loopEnd = '4m';
+        }
+
+        async function toggleMusic() {
+            // First time a user clicks, we start the audio context
+            if (Tone.context.state !== 'running') {
+                await Tone.start();
+                setupMusic();
+                
+            }
+
+            isMuted = !isMuted;
+            if (isMuted) {
+                Tone.Transport.stop();
+                musicIconEl.innerHTML = '&#128263;'; // Mute icon
+                musicButtonEl.textContent = ' Music OFF';
+                musicButtonEl.prepend(musicIconEl);
+            } else {
+                Tone.Transport.start();
+                musicIconEl.innerHTML = '&#128266;'; // Speaker icon
+                musicButtonEl.textContent = ' Music ON';
+                musicButtonEl.prepend(musicIconEl);
+            }
+        }
+
+        // --- Configuration ---
         const TIMER_MAX = 15; // Seconds per round
         const REVEAL_LIMIT = 0.70; // Stop revealing at 70% completion
         const MAX_SCORE = 100;
-        
-        // IMPORTANT: Use real image URLs for actual gameplay. The following URL is a placeholder.
-        const PLACEHOLDER_POSTER_URL = "https://placehold.co/300x450/222222/cccccc?text=Movie+Poster+Placeholder";
-
-        // Mock Movie Data (replace with real data for a functional game)
-        // Structure: { title, year, correct, image, options: [A, B, C, D] }
-        const movieData = [
-            { id: 1, title: "Jaws", year: 1975, correct: "A", image: PLACEHOLDER_POSTER_URL, options: ["Jaws", "Alien", "Deep Blue Sea", "The Poseidon Adventure"] },
-            { id: 2, title: "Star Wars", year: 1977, correct: "D", image: PLACEHOLDER_POSTER_URL, options: ["Star Trek", "2001: A Space Odyssey", "Dune", "Star Wars"] },
-            { id: 3, title: "E.T. the Extra-Terrestrial", year: 1982, correct: "C", image: PLACEHOLDER_POSTER_URL, options: ["Close Encounters", "Flight of the Navigator", "E.T. the Extra-Terrestrial", "Cocoon"] },
-            { id: 4, title: "Back to the Future", year: 1985, correct: "B", image: PLACEHOLDER_POSTER_URL, options: ["The Goonies", "Back to the Future", "Ferris Bueller's Day Off", "Gremlins"] },
-            { id: 5, title: "Pulp Fiction", year: 1994, correct: "A", image: PLACEHOLDER_POSTER_URL, options: ["Pulp Fiction", "Reservoir Dogs", "The Usual Suspects", "Fight Club"] },
-            { id: 6, title: "The Dark Knight", year: 2008, correct: "B", image: PLACEHOLDER_POSTER_URL, options: ["Batman Begins", "The Dark Knight", "Inception", "Joker"] },
-            { id: 7, title: "Inception", year: 2010, correct: "C", image: PLACEHOLDER_POSTER_URL, options: ["Interstellar", "Tenet", "Inception", "The Prestige"] },
-            // Add more data here following the 1975 to present rule!
-        ];
 
         // --- Game State Variables ---
         let gameState = {
@@ -160,8 +243,22 @@
             statusMessageEl.textContent = 'Welcome to Pixel Flicks! Click START to begin.';
             nextButtonEl.textContent = 'Start Game';
             nextButtonEl.classList.remove('hidden');
-            // Draw initial blurred poster
-            drawPoster(PLACEHOLDER_POSTER_URL, true);
+            
+            // Draw initial blurred poster using the first image (which should fail, showing the red box)
+            if (movieData.length > 0) {
+                 drawPoster(movieData[0].image, true);
+            } else {
+                 // Fallback if movieData is empty
+                 drawPoster("https://placehold.co/300x450/222222/cccccc?text=Loading+Data...", true);
+            }
+            
+            // Initialize Tone.js but keep it muted until the user interacts
+            setupMusic();
+            Tone.Transport.stop(); // Ensure it starts paused
+            isMuted = true;
+            musicIconEl.innerHTML = '&#128263;'; // Mute icon
+            musicButtonEl.textContent = ' Music OFF';
+            musicButtonEl.prepend(musicIconEl);
         };
         
         /**
@@ -214,14 +311,17 @@
                 }
             };
             gameState.posterImage.onerror = () => {
-                // Fallback for image loading error
+                // Fallback for image loading error - Shows a red box with error text
                 ctx.fillStyle = '#ff0000';
                 ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
                 ctx.fillStyle = '#fff';
                 ctx.font = '16px Inter';
                 ctx.textAlign = 'center';
-                ctx.fillText('ERROR LOADING IMAGE', CANVAS_W / 2, CANVAS_H / 2);
+                ctx.fillText('ERROR LOADING IMAGE', CANVAS_W / 2, CANVAS_H / 2 - 10);
+                ctx.fillText('Check 1.jpg in /images folder', CANVAS_W / 2, CANVAS_H / 2 + 10);
             };
+            // Set cross-origin to anonymous for canvas image usage 
+            gameState.posterImage.crossOrigin = "anonymous"; 
             gameState.posterImage.src = url;
         }
         
@@ -245,7 +345,6 @@
                 const chunk = gameState.pixelatedChunks[i];
                 if (!chunk.revealed) {
                     // This is the "reveal" step: just redraw the image over the cover chunk
-                    // We only need to redraw the image portion corresponding to the chunk size
                     const sx = chunk.x; // Source X
                     const sy = chunk.y; // Source Y
                     const sw = CHUNK_SIZE; // Source Width
@@ -299,6 +398,14 @@
          * Sets up the UI and data for the next round.
          */
         function nextRound() {
+            // Safety check for movieData before starting
+             if (typeof movieData === 'undefined' || movieData.length === 0) {
+                statusMessageEl.textContent = "Error: Movie data failed to load. Please check movie-data.js file.";
+                nextButtonEl.textContent = 'Data Error';
+                nextButtonEl.classList.remove('hidden');
+                return;
+            }
+
             if (gameState.round >= movieData.length) {
                 // Game over, no more movies
                 statusMessageEl.textContent = `Game Over! Final Score: ${gameState.totalScore}. Click restart to play again.`;

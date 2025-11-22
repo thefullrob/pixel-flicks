@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Flicks: Movie Poster Quiz</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a202c; /* Dark background */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        .game-container {
+            width: 100%;
+            max-width: 700px;
+            background-color: #2d3748;
+            border-radius: 1rem;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+        }
+        #posterCanvas {
+            width: 100%;
+            height: auto;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            background-color: #000;
+        }
+        .choice-button {
+            transition: background-color 0.15s ease-in-out, transform 0.1s;
+        }
+        .choice-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
+        }
+        .choice-button.correct {
+            background-color: #10b981; /* Green 500 */
+        }
+        .choice-button.incorrect {
+            background-color: #ef4444; /* Red 500 */
+        }
+        .choice-button:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        .timer-bar-bg {
+            height: 10px;
+            background-color: #4a5568;
+            border-radius: 9999px;
+            overflow: hidden;
+        }
+        #timerBar {
+            height: 100%;
+            background-color: #3b82f6; /* Blue 500 */
+            transition: width 1s linear;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-app" class="game-container p-6 text-white">
+
+        <h1 class="text-4xl font-extrabold text-center mb-6 text-yellow-400">
+            Pixel Flicks
+        </h1>
+
+        <!-- Scoreboard and Timer -->
+        <div class="flex justify-between items-center mb-4 p-3 bg-gray-700 rounded-lg">
+            <div class="text-xl font-semibold">Score: <span id="totalScore">0</span></div>
+            <div class="text-xl font-semibold">Round: <span id="roundNumber">1</span></div>
+            <div class="text-xl font-semibold">Current Points: <span id="currentPoints">100</span></div>
+        </div>
+
+        <!-- Timer Bar -->
+        <div class="mb-4">
+            <p class="text-sm text-gray-400 mb-1">Time Remaining: <span id="timeLeftDisplay">15</span>s</p>
+            <div class="timer-bar-bg">
+                <div id="timerBar" style="width: 100%;"></div>
+            </div>
+        </div>
+        
+        <!-- Poster Canvas Area -->
+        <div class="flex justify-center">
+            <!-- Canvas is set to a fixed aspect ratio for poster display -->
+            <canvas id="posterCanvas" width="300" height="450" class="rounded-lg shadow-xl"></canvas>
+        </div>
+
+        <!-- Status Message and Start/Next Button -->
+        <div class="text-center my-4">
+            <p id="statusMessage" class="text-lg font-medium min-h-[1.5rem]"></p>
+            <button id="nextButton" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-full mt-2 hidden" onclick="nextRound()">
+                Start Game
+            </button>
+        </div>
+
+        <!-- Multiple Choice Buttons -->
+        <div id="choicesContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+            <!-- Buttons will be dynamically added here -->
+        </div>
+
+    </div>
+
+    <script>
+        // --- Configuration and Mock Data ---
+        const TIMER_MAX = 15; // Seconds per round
+        const REVEAL_LIMIT = 0.70; // Stop revealing at 70% completion
+        const MAX_SCORE = 100;
+        
+        // IMPORTANT: Use real image URLs for actual gameplay. The following URL is a placeholder.
+        const PLACEHOLDER_POSTER_URL = "https://placehold.co/300x450/222222/cccccc?text=Movie+Poster+Placeholder";
+
+        // Mock Movie Data (replace with real data for a functional game)
+        // Structure: { title, year, correct, image, options: [A, B, C, D] }
+        const movieData = [
+            { id: 1, title: "Jaws", year: 1975, correct: "A", image: PLACEHOLDER_POSTER_URL, options: ["Jaws", "Alien", "Deep Blue Sea", "The Poseidon Adventure"] },
+            { id: 2, title: "Star Wars", year: 1977, correct: "D", image: PLACEHOLDER_POSTER_URL, options: ["Star Trek", "2001: A Space Odyssey", "Dune", "Star Wars"] },
+            { id: 3, title: "E.T. the Extra-Terrestrial", year: 1982, correct: "C", image: PLACEHOLDER_POSTER_URL, options: ["Close Encounters", "Flight of the Navigator", "E.T. the Extra-Terrestrial", "Cocoon"] },
+            { id: 4, title: "Back to the Future", year: 1985, correct: "B", image: PLACEHOLDER_POSTER_URL, options: ["The Goonies", "Back to the Future", "Ferris Bueller's Day Off", "Gremlins"] },
+            { id: 5, title: "Pulp Fiction", year: 1994, correct: "A", image: PLACEHOLDER_POSTER_URL, options: ["Pulp Fiction", "Reservoir Dogs", "The Usual Suspects", "Fight Club"] },
+            { id: 6, title: "The Dark Knight", year: 2008, correct: "B", image: PLACEHOLDER_POSTER_URL, options: ["Batman Begins", "The Dark Knight", "Inception", "Joker"] },
+            { id: 7, title: "Inception", year: 2010, correct: "C", image: PLACEHOLDER_POSTER_URL, options: ["Interstellar", "Tenet", "Inception", "The Prestige"] },
+            // Add more data here following the 1975 to present rule!
+        ];
+
+        // --- Game State Variables ---
+        let gameState = {
+            totalScore: 0,
+            round: 0,
+            currentMovie: null,
+            timerInterval: null,
+            timeLeft: TIMER_MAX,
+            isGameOver: true,
+            posterImage: new Image(),
+            pixelatedChunks: []
+        };
+        
+        // --- DOM References ---
+        const totalScoreEl = document.getElementById('totalScore');
+        const roundNumberEl = document.getElementById('roundNumber');
+        const currentPointsEl = document.getElementById('currentPoints');
+        const timeLeftDisplayEl = document.getElementById('timeLeftDisplay');
+        const timerBarEl = document.getElementById('timerBar');
+        const statusMessageEl = document.getElementById('statusMessage');
+        const nextButtonEl = document.getElementById('nextButton');
+        const choicesContainerEl = document.getElementById('choicesContainer');
+        const canvas = document.getElementById('posterCanvas');
+        const ctx = canvas.getContext('2d');
+        const CANVAS_W = canvas.width;
+        const CANVAS_H = canvas.height;
+        const CHUNK_SIZE = 15; // Size of the square chunks for reveal effect
+
+        // --- Initialization and Utility ---
+
+        window.onload = () => {
+            statusMessageEl.textContent = 'Welcome to Pixel Flicks! Click START to begin.';
+            nextButtonEl.textContent = 'Start Game';
+            nextButtonEl.classList.remove('hidden');
+            // Draw initial blurred poster
+            drawPoster(PLACEHOLDER_POSTER_URL, true);
+        };
+        
+        /**
+         * Calculates the score based on remaining time.
+         * Score decays linearly from MAX_SCORE (100) to 0.
+         * @returns {number} The calculated score.
+         */
+        function calculateScore() {
+            if (gameState.timeLeft <= 0) return 0;
+            const score = Math.round((gameState.timeLeft / TIMER_MAX) * MAX_SCORE);
+            return score;
+        }
+
+        /**
+         * Shuffles an array (Fisher-Yates algorithm).
+         */
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+        
+        // --- Canvas and Reveal Logic ---
+
+        /**
+         * Draws the poster image onto the canvas and initializes the pixelation grid.
+         * @param {string} url - The image URL.
+         * @param {boolean} pixelate - If true, initializes the cover for revealing.
+         */
+        function drawPoster(url, pixelate = false) {
+            ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+
+            gameState.posterImage.onload = () => {
+                ctx.drawImage(gameState.posterImage, 0, 0, CANVAS_W, CANVAS_H);
+
+                if (pixelate) {
+                    gameState.pixelatedChunks = [];
+                    for (let x = 0; x < CANVAS_W; x += CHUNK_SIZE) {
+                        for (let y = 0; y < CANVAS_H; y += CHUNK_SIZE) {
+                            // Store coordinates for each chunk to be revealed
+                            gameState.pixelatedChunks.push({ x: x, y: y, revealed: false });
+                            // Draw the initial cover (black square)
+                            ctx.fillStyle = '#222222'; 
+                            ctx.fillRect(x, y, CHUNK_SIZE, CHUNK_SIZE);
+                        }
+                    }
+                    // Shuffle the chunks so they reveal randomly
+                    shuffleArray(gameState.pixelatedChunks);
+                }
+            };
+            gameState.posterImage.onerror = () => {
+                // Fallback for image loading error
+                ctx.fillStyle = '#ff0000';
+                ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+                ctx.fillStyle = '#fff';
+                ctx.font = '16px Inter';
+                ctx.textAlign = 'center';
+                ctx.fillText('ERROR LOADING IMAGE', CANVAS_W / 2, CANVAS_H / 2);
+            };
+            gameState.posterImage.src = url;
+        }
+        
+        /**
+         * Reveals one piece of the poster by clearing the cover chunk.
+         */
+        function revealPosterPiece() {
+            // Calculate how many pieces should be revealed based on time remaining
+            // Reveal amount is (Total Time - Time Left) / Total Time
+            const timeElapsedRatio = (TIMER_MAX - gameState.timeLeft) / TIMER_MAX;
+            
+            // Only reveal if the elapsed ratio is less than the REVEAL_LIMIT (70%)
+            if (timeElapsedRatio >= REVEAL_LIMIT) return;
+
+            // Calculate the target number of chunks to reveal
+            const totalChunks = gameState.pixelatedChunks.length;
+            const targetIndex = Math.floor(totalChunks * timeElapsedRatio);
+
+            // Reveal up to the target index if not already revealed
+            for (let i = 0; i < targetIndex; i++) {
+                const chunk = gameState.pixelatedChunks[i];
+                if (!chunk.revealed) {
+                    // This is the "reveal" step: just redraw the image over the cover chunk
+                    // We only need to redraw the image portion corresponding to the chunk size
+                    const sx = chunk.x; // Source X
+                    const sy = chunk.y; // Source Y
+                    const sw = CHUNK_SIZE; // Source Width
+                    const sh = CHUNK_SIZE; // Source Height
+                    const dx = chunk.x; // Destination X
+                    const dy = chunk.y; // Destination Y
+                    const dw = CHUNK_SIZE; // Destination Width
+                    const dh = CHUNK_SIZE; // Destination Height
+
+                    ctx.drawImage(gameState.posterImage, sx, sy, sw, sh, dx, dy, dw, dh);
+                    chunk.revealed = true;
+                }
+            }
+        }
+        
+        /**
+         * Fully reveals the poster (used when time runs out or guess is made).
+         */
+        function fullReveal() {
+            ctx.drawImage(gameState.posterImage, 0, 0, CANVAS_W, CANVAS_H);
+            // Mark all chunks as revealed
+            gameState.pixelatedChunks.forEach(chunk => chunk.revealed = true);
+        }
+
+        // --- Game Flow Functions ---
+
+        /**
+         * Starts the timer and the reveal mechanic.
+         */
+        function startTimer() {
+            gameState.timeLeft = TIMER_MAX;
+            gameState.timerInterval = setInterval(() => {
+                gameState.timeLeft -= 1;
+                
+                // Update score and UI
+                const currentScore = calculateScore();
+                currentPointsEl.textContent = currentScore;
+                timeLeftDisplayEl.textContent = gameState.timeLeft;
+                timerBarEl.style.width = `${(gameState.timeLeft / TIMER_MAX) * 100}%`;
+                
+                // Reveal a piece of the poster
+                revealPosterPiece();
+
+                if (gameState.timeLeft <= 0) {
+                    endRound(false); // Time ran out
+                }
+            }, 1000);
+        }
+
+        /**
+         * Sets up the UI and data for the next round.
+         */
+        function nextRound() {
+            if (gameState.round >= movieData.length) {
+                // Game over, no more movies
+                statusMessageEl.textContent = `Game Over! Final Score: ${gameState.totalScore}. Click restart to play again.`;
+                nextButtonEl.textContent = 'Restart Game';
+                gameState.round = 0; // Prepare for restart
+                gameState.totalScore = 0;
+                totalScoreEl.textContent = '0';
+                return;
+            }
+            
+            // Setup for new round
+            gameState.isGameOver = false;
+            gameState.round++;
+            gameState.currentMovie = movieData[gameState.round - 1];
+
+            // Reset UI
+            clearInterval(gameState.timerInterval);
+            currentPointsEl.textContent = MAX_SCORE;
+            roundNumberEl.textContent = gameState.round;
+            statusMessageEl.textContent = `Round ${gameState.round} of ${movieData.length}. Guess the movie!`;
+            nextButtonEl.classList.add('hidden');
+            
+            // Set up poster
+            drawPoster(gameState.currentMovie.image, true);
+            
+            // Set up choice buttons
+            renderChoices(gameState.currentMovie.options);
+            
+            // Start the clock
+            startTimer();
+        }
+
+        /**
+         * Renders the multiple choice buttons.
+         * @param {Array<string>} choices - Array of movie title strings.
+         */
+        function renderChoices(choices) {
+            choicesContainerEl.innerHTML = '';
+            const optionsMap = ['A', 'B', 'C', 'D'];
+            
+            choices.forEach((title, index) => {
+                const optionChar = optionsMap[index];
+                const button = document.createElement('button');
+                button.className = 'choice-button px-4 py-3 bg-blue-600 text-white font-semibold rounded-lg text-left';
+                button.setAttribute('data-choice', optionChar);
+                button.textContent = `${optionChar}) ${title} (${gameState.currentMovie.year})`;
+                button.onclick = () => checkAnswer(optionChar, button);
+                choicesContainerEl.appendChild(button);
+            });
+        }
+
+        /**
+         * Processes the player's guess.
+         * @param {string} chosenOption - The letter chosen (A, B, C, or D).
+         * @param {HTMLElement} button - The button element that was clicked.
+         */
+        function checkAnswer(chosenOption, button) {
+            if (gameState.isGameOver) return; // Prevent guessing after round ends
+
+            clearInterval(gameState.timerInterval); // Stop the timer
+
+            const isCorrect = chosenOption === gameState.currentMovie.correct;
+            endRound(isCorrect, button);
+        }
+
+        /**
+         * Ends the current round, updates score, and shows the result.
+         * @param {boolean} isCorrect - Whether the guess was correct.
+         * @param {HTMLElement} clickedButton - The button that was clicked (optional).
+         */
+        function endRound(isCorrect, clickedButton = null) {
+            gameState.isGameOver = true;
+            
+            // Full poster reveal
+            fullReveal();
+            
+            // Disable all choice buttons
+            Array.from(choicesContainerEl.children).forEach(btn => {
+                btn.disabled = true;
+                const choice = btn.getAttribute('data-choice');
+                // Highlight correct answer in green
+                if (choice === gameState.currentMovie.correct) {
+                    btn.classList.add('correct');
+                    btn.classList.remove('bg-blue-600');
+                } else if (btn === clickedButton) {
+                    // Highlight incorrect choice in red
+                    btn.classList.add('incorrect');
+                    btn.classList.remove('bg-blue-600');
+                }
+            });
+
+            let roundPoints = 0;
+            if (isCorrect) {
+                roundPoints = calculateScore();
+                gameState.totalScore += roundPoints;
+                statusMessageEl.textContent = `CORRECT! You earned ${roundPoints} points!`;
+                statusMessageEl.classList.add('text-green-400');
+                statusMessageEl.classList.remove('text-red-400');
+            } else {
+                statusMessageEl.textContent = `TIME UP / INCORRECT! The answer was "${gameState.currentMovie.title}".`;
+                statusMessageEl.classList.add('text-red-400');
+                statusMessageEl.classList.remove('text-green-400');
+            }
+            
+            // Update UI
+            totalScoreEl.textContent = gameState.totalScore;
+            currentPointsEl.textContent = roundPoints;
+            nextButtonEl.classList.remove('hidden');
+            nextButtonEl.textContent = (gameState.round < movieData.length) ? 'Next Poster' : 'Finish Game';
+        }
+
+    </script>
+</body>
+</html>

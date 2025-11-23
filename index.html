@@ -116,6 +116,7 @@
         .result-score { font-size: 1.5rem; color: #e5e7eb; margin-bottom: 1.5rem; }
         .text-glow-green { text-shadow: 0 0 15px rgba(52, 211, 153, 0.8); color: #34d399; }
         .text-glow-red { text-shadow: 0 0 15px rgba(239, 68, 68, 0.8); color: #ef4444; }
+        .text-glow-gold { text-shadow: 0 0 15px rgba(251, 191, 36, 0.8); color: #fbbf24; }
 
     </style>
 </head>
@@ -151,7 +152,7 @@
                 <button id="musicButton" 
                         class="px-3 py-2 sm:px-4 bg-gray-600 hover:bg-gray-500 text-white rounded-full text-xs sm:text-sm transition duration-150 flex items-center"
                         onclick="toggleMusic()">
-                    <span id="musicIcon" class="mr-1">&#128263;</span> Sound OFF
+                    <span id="musicIcon" class="mr-1">&#128266;</span> Sound ON
                 </button>
             </div>
         </div>
@@ -164,6 +165,9 @@
                 <div id="scoreDisplay1P" class="flex justify-between items-center">
                     <div class="text-xl font-semibold player-1-color">
                         Score: <span id="totalScore1P">0</span> 
+                    </div>
+                    <div class="text-sm font-medium text-gray-400" id="stageIndicator">
+                        Stage 1
                     </div>
                 </div>
                 <div class="flex justify-between items-center">
@@ -208,7 +212,7 @@
     <!-- 2. Game logic script -->
     <script>
         // --- Tone.js Setup ---
-        let isMuted = false;
+        let isMuted = false; // Default to false (Sound ON)
         const musicButtonEl = document.getElementById('musicButton');
         const musicIconEl = document.getElementById('musicIcon');
         let winSynth = null;
@@ -241,6 +245,7 @@
         }
 
         async function toggleMusic() {
+            // Ensure context is running on toggle
             if (Tone.context.state !== 'running') {
                 await Tone.start();
             }
@@ -258,9 +263,13 @@
 
         // --- Configuration ---
         const TIMER_MAX = 15;
-        const REVEAL_LIMIT = 1.0; // FULL REVEAL (Changed from 0.70)
+        const REVEAL_LIMIT = 1.0; // FULL REVEAL
         const MAX_SCORE = 100;
-        const CHUNK_SIZE = 7; // Updated to 7 as requested
+        const CHUNK_SIZE = 7; // Small pixels
+
+        // Progression Thresholds
+        const STAGE_1_PASS_SCORE = 500;
+        const BONUS_ROUND_UNLOCK_SCORE = 1000;
 
         // --- Game State Variables ---
         let gameState = {
@@ -273,9 +282,14 @@
             posterImage: new Image(),
             pixelatedChunks: []
         };
+
+        // NEW: Game List Array to store the shuffled order
+        let gameMovies = [];
+        let attractModeAnimationId = null; // For the retro static effect
         
         // --- DOM References ---
         const totalScoreEl = document.getElementById('totalScore1P'); 
+        const stageIndicatorEl = document.getElementById('stageIndicator');
         const roundNumberEl = document.getElementById('roundNumber');
         const currentPointsEl = document.getElementById('currentPoints');
         const timeLeftDisplayEl = document.getElementById('timeLeftDisplay');
@@ -298,7 +312,7 @@
         // --- Share Function ---
         async function shareGame() {
             const finalScore = gameState.totalScore;
-            const message = `I just scored ${finalScore} points in Pixel Flicks! Can you beat me?`;
+            const message = `I just scored ${finalScore} points in Pixel Flicks: The Movie Poster Quiz! Can you beat me?`;
             const shareUrl = window.location.href; 
             
             if (navigator.share) {
@@ -324,23 +338,77 @@
              setTimeout(() => { statusMessageEl.classList.remove('text-yellow-400'); }, 3000);
         }
         
+        // --- Retro Attract Mode Animation ---
+        function startAttractMode() {
+            // Only start if not already running
+            if (attractModeAnimationId) return;
+
+            function animate(time) {
+                // Create random noise
+                const idata = ctx.createImageData(CANVAS_W, CANVAS_H);
+                const buffer32 = new Uint32Array(idata.data.buffer);
+                const len = buffer32.length;
+
+                for (let i = 0; i < len; i++) {
+                    if (Math.random() < 0.1) {
+                        buffer32[i] = 0xff222222; // Dark gray noise
+                    } else {
+                        buffer32[i] = 0xff000000; // Black background
+                    }
+                }
+                ctx.putImageData(idata, 0, 0);
+
+                // Draw Blinking Text
+                // Blink roughly every 800ms
+                if (Math.floor(Date.now() / 800) % 2 === 0) {
+                    ctx.fillStyle = "#fcd34d"; // Amber/Gold color
+                    ctx.font = "bold 30px 'Courier New', monospace";
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "middle";
+                    ctx.fillText("PRESS START", CANVAS_W / 2, CANVAS_H / 2);
+                }
+
+                attractModeAnimationId = requestAnimationFrame(animate);
+            }
+            animate();
+        }
+
+        function stopAttractMode() {
+            if (attractModeAnimationId) {
+                cancelAnimationFrame(attractModeAnimationId);
+                attractModeAnimationId = null;
+            }
+        }
+
         // --- Initialization and Game Flow ---
 
         window.onload = () => {
             setupMusic(); 
-            isMuted = true;
+            // Set default to Sound ON
+            isMuted = false;
+            musicIconEl.innerHTML = '&#128266;'; 
+            musicButtonEl.innerHTML = '<span id="musicIcon" class="mr-1">&#128266;</span> Sound ON'; 
             
             statusMessageEl.textContent = 'Welcome to Pixel Flicks! Click START GAME to begin.';
             
-            // Check if movieData is loaded from external file
+            // Start the retro TV static animation immediately
+            startAttractMode();
+
+            // Load Data
             if (typeof movieData !== 'undefined' && movieData.length > 0) {
-                 // Successfully loaded external data
-                 drawPoster(movieData[0].image, true);
+                 gameMovies = [...movieData];
+                 shuffleArray(gameMovies);
+                 // Note: We don't draw the first poster yet, we let the Attract Mode run
             } else {
-                 // Data file missing or empty
-                 drawPoster("https://placehold.co/300x450/222222/cccccc?text=Loading+Data...", true);
                  statusMessageEl.textContent = "Error: movie-data.js file not found or empty.";
             }
+
+            // Attach listener to Start Game button to wake up AudioContext
+            initialStartButton.addEventListener('click', async () => {
+                if (Tone.context.state !== 'running') {
+                    await Tone.start();
+                }
+            });
         };
 
         function calculateScore() {
@@ -396,23 +464,19 @@
             const imgWidth = gameState.posterImage.naturalWidth;
             const imgHeight = gameState.posterImage.naturalHeight;
             
-            // Safety check
             if (!imgWidth || !imgHeight) return;
 
-            // Calculate scale factors
             const scaleX = imgWidth / CANVAS_W;
             const scaleY = imgHeight / CANVAS_H;
 
             for (let i = 0; i < targetIndex; i++) {
                 const chunk = gameState.pixelatedChunks[i];
                 if (!chunk.revealed) {
-                    // Calculate source coordinates using scale factors
                     const sx = chunk.x * scaleX;
                     const sy = chunk.y * scaleY;
                     const sWidth = CHUNK_SIZE * scaleX;
                     const sHeight = CHUNK_SIZE * scaleY;
 
-                    // Draw the correctly scaled portion of the image
                     ctx.drawImage(gameState.posterImage, sx, sy, sWidth, sHeight, chunk.x, chunk.y, CHUNK_SIZE, CHUNK_SIZE);
                     chunk.revealed = true;
                 }
@@ -445,38 +509,36 @@
             // Hide overlay if it's open
             resultOverlayEl.classList.remove('active');
 
-            if (typeof movieData === 'undefined' || movieData.length === 0) {
+            // NEW: Stop attract mode animation if running (on first click)
+            stopAttractMode();
+
+            // UPDATED: Check against gameMovies instead of movieData
+            if (gameMovies.length === 0) {
                 statusMessageEl.textContent = "Error loading data.";
                 return;
             }
 
-            if (gameState.round >= movieData.length) {
-                // Show Game Over in Overlay
-                resultTitleEl.textContent = "GAME OVER";
-                resultTitleEl.className = "result-title text-yellow-400";
-                resultScoreEl.textContent = `Final Score: ${gameState.totalScore}`;
-                
-                // UPDATED: Share Button on Game Over
-                overlayNextButtonEl.textContent = "Send to a Friend";
-                overlayNextButtonEl.classList.remove('bg-indigo-600', 'hover:bg-indigo-500');
-                overlayNextButtonEl.classList.add('bg-green-600', 'hover:bg-green-500');
-                overlayNextButtonEl.onclick = shareGame; // Calls share logic
-                
-                resultOverlayEl.classList.add('active');
-                
-                // Do not reset scores yet so share message is accurate
+            if (gameState.round >= gameMovies.length) {
+                // Game Completed (Finished Bonus Round)
+                showGameOver(`CONGRATS!`, `You beat the game! Final Score: ${gameState.totalScore}`);
                 return;
             }
             
             gameState.isGameOver = false;
             gameState.round++;
-            gameState.currentMovie = movieData[gameState.round - 1];
+            // UPDATED: Use gameMovies to get the random movie
+            gameState.currentMovie = gameMovies[gameState.round - 1];
+
+            // Update Stage Indicator
+            let stageText = "Stage 1";
+            if (gameState.round > 20) stageText = "BONUS ROUND";
+            else if (gameState.round > 10) stageText = "Stage 2";
+            stageIndicatorEl.textContent = stageText;
 
             clearInterval(gameState.timerInterval);
             currentPointsEl.textContent = MAX_SCORE;
             roundNumberEl.textContent = gameState.round;
             
-            // Clear status and hide initial button
             statusMessageEl.textContent = ""; 
             initialStartButton.classList.add('hidden'); 
             
@@ -507,6 +569,23 @@
             endRound(isCorrect, button);
         }
 
+        function showGameOver(title, message, allowRetry = true) {
+            resultTitleEl.textContent = title;
+            resultTitleEl.className = "result-title text-yellow-400";
+            resultScoreEl.textContent = message;
+            
+            // UPDATED: Share Button on Game Over
+            overlayNextButtonEl.textContent = "Send to a Friend";
+            overlayNextButtonEl.classList.remove('bg-indigo-600', 'hover:bg-indigo-500');
+            overlayNextButtonEl.classList.add('bg-green-600', 'hover:bg-green-500');
+            overlayNextButtonEl.onclick = shareGame; 
+            
+            // Note: To properly restart, user needs to refresh or we add a secondary button. 
+            // For simplicity sharing is the primary action here.
+            
+            resultOverlayEl.classList.add('active');
+        }
+
         function endRound(isCorrect, clickedButton = null) {
             gameState.isGameOver = true;
             playSound(isCorrect);
@@ -516,6 +595,8 @@
             let resultTitleText = "";
             let resultScoreText = "";
             let titleClass = "result-title";
+            let btnText = "Next Poster";
+            let btnAction = nextRound;
 
             // Prepare Overlay Content
             if (isCorrect) {
@@ -523,30 +604,66 @@
                 gameState.totalScore += roundPoints;
                 totalScoreEl.textContent = gameState.totalScore;
                 
-                // Set up Correct Overlay
                 resultTitleText = "CORRECT!";
                 titleClass += " text-glow-green";
                 resultScoreText = `+${roundPoints} Points`;
                 
             } else {
-                // Set up Incorrect Overlay
-                resultTitleText = "WRONG!"; // Or "TIME'S UP!" if clickedButton is null/time ran out
+                resultTitleText = "WRONG!"; 
                 if (!clickedButton) resultTitleText = "TIME'S UP!";
-                
                 titleClass += " text-glow-red";
                 resultScoreText = `The answer was:\n${gameState.currentMovie.title}`;
+            }
+
+            // --- STAGE PROGRESSION CHECKS ---
+            // Check after Round 10 (End of Stage 1)
+            if (gameState.round === 10) {
+                if (gameState.totalScore < STAGE_1_PASS_SCORE) {
+                    resultTitleText = "GAME OVER";
+                    titleClass = "result-title text-glow-red";
+                    resultScoreText = `Score: ${gameState.totalScore}. You need ${STAGE_1_PASS_SCORE} to advance.`;
+                    btnText = "Send to a Friend";
+                    btnAction = shareGame;
+                } else {
+                    resultScoreText += `\n\nSTAGE 1 CLEARED!\nAdvancing to Stage 2...`;
+                    btnText = "Start Stage 2";
+                }
+            }
+            // Check after Round 20 (End of Stage 2)
+            else if (gameState.round === 20) {
+                if (gameState.totalScore < BONUS_ROUND_UNLOCK_SCORE) {
+                    resultTitleText = "GAME OVER";
+                    titleClass = "result-title text-glow-red";
+                    resultScoreText = `Score: ${gameState.totalScore}. You need ${BONUS_ROUND_UNLOCK_SCORE} for Bonus.`;
+                    btnText = "Send to a Friend";
+                    btnAction = shareGame;
+                } else {
+                    resultTitleText = "BONUS UNLOCKED!";
+                    titleClass = "result-title text-glow-gold"; // New Gold Style
+                    resultScoreText += `\n\n1000+ Points Reached!\nEntering Bonus Round...`;
+                    btnText = "Start Bonus Round";
+                }
+            }
+            // End of Game (Round 25)
+            else if (gameState.round === 25) {
+                 btnText = "Finish Game";
             }
 
             // Apply to Overlay elements
             resultTitleEl.textContent = resultTitleText;
             resultTitleEl.className = titleClass;
-            resultScoreEl.innerText = resultScoreText; // innerText handles \n
+            resultScoreEl.innerText = resultScoreText; 
             
-            // Standard Next Round Button Config
-            overlayNextButtonEl.textContent = (gameState.round < movieData.length) ? 'Next Poster' : 'Finish Game';
-            overlayNextButtonEl.classList.remove('bg-green-600', 'hover:bg-green-500');
-            overlayNextButtonEl.classList.add('bg-indigo-600', 'hover:bg-indigo-500');
-            overlayNextButtonEl.onclick = nextRound; // Reset to standard flow
+            overlayNextButtonEl.textContent = btnText;
+            // Reset button style to standard next/action style
+            if (btnAction === shareGame) {
+                 overlayNextButtonEl.classList.remove('bg-indigo-600', 'hover:bg-indigo-500');
+                 overlayNextButtonEl.classList.add('bg-green-600', 'hover:bg-green-500');
+            } else {
+                 overlayNextButtonEl.classList.remove('bg-green-600', 'hover:bg-green-500');
+                 overlayNextButtonEl.classList.add('bg-indigo-600', 'hover:bg-indigo-500');
+            }
+            overlayNextButtonEl.onclick = btnAction;
             
             // Trigger Animation
             resultOverlayEl.classList.add('active');

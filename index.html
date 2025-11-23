@@ -258,8 +258,9 @@
 
         // --- Configuration ---
         const TIMER_MAX = 15;
-        const REVEAL_LIMIT = 0.70; 
+        const REVEAL_LIMIT = 1.0; // FULL REVEAL (Changed from 0.70)
         const MAX_SCORE = 100;
+        const CHUNK_SIZE = 3; // Much smaller pixels (1/5th of previous 15 size)
 
         // --- Game State Variables ---
         let gameState = {
@@ -293,7 +294,6 @@
 
         const CANVAS_W = canvas.width;
         const CANVAS_H = canvas.height;
-        const CHUNK_SIZE = 15;
 
         // --- Share Function ---
         async function shareGame() {
@@ -435,12 +435,16 @@
                 resultTitleEl.textContent = "GAME OVER";
                 resultTitleEl.className = "result-title text-yellow-400";
                 resultScoreEl.textContent = `Final Score: ${gameState.totalScore}`;
-                overlayNextButtonEl.textContent = "Play Again";
-                overlayNextButtonEl.onclick = () => window.location.reload();
+                
+                // UPDATED: Share Button on Game Over
+                overlayNextButtonEl.textContent = "Send to a Friend";
+                overlayNextButtonEl.classList.remove('bg-indigo-600', 'hover:bg-indigo-500');
+                overlayNextButtonEl.classList.add('bg-green-600', 'hover:bg-green-500');
+                overlayNextButtonEl.onclick = shareGame; // Calls share logic
+                
                 resultOverlayEl.classList.add('active');
                 
-                gameState.round = 0;
-                gameState.totalScore = 0;
+                // Do not reset scores yet so share message is accurate
                 return;
             }
             
@@ -517,7 +521,12 @@
             resultTitleEl.textContent = resultTitleText;
             resultTitleEl.className = titleClass;
             resultScoreEl.innerText = resultScoreText; // innerText handles \n
+            
+            // Standard Next Round Button Config
             overlayNextButtonEl.textContent = (gameState.round < movieData.length) ? 'Next Poster' : 'Finish Game';
+            overlayNextButtonEl.classList.remove('bg-green-600', 'hover:bg-green-500');
+            overlayNextButtonEl.classList.add('bg-indigo-600', 'hover:bg-indigo-500');
+            overlayNextButtonEl.onclick = nextRound; // Reset to standard flow
             
             // Trigger Animation
             resultOverlayEl.classList.add('active');

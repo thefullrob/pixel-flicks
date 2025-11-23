@@ -64,9 +64,8 @@
             transition: width 1s linear;
         }
 
-        /* --- NEW ANIMATIONS --- */
+        /* --- ANIMATIONS --- */
 
-        /* 1. Score Fly Animation (Small +Points) */
         @keyframes score-fly {
             0% { opacity: 1; transform: scale(1.5) translateY(0); }
             100% { opacity: 0; transform: scale(0.5) translateY(-50px); }
@@ -82,7 +81,6 @@
             text-shadow: 0 0 10px rgba(52, 211, 153, 0.7);
         }
 
-        /* 2. Round Result Overlay Animation (Big Popup) */
         @keyframes pop-in {
             0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
             50% { transform: translate(-50%, -50%) scale(1.05); opacity: 1; }
@@ -138,8 +136,7 @@
         <div class="flex justify-between items-center mb-6">
             <!-- LOGO IMAGE -->
             <div class="flex-grow">
-                <!-- Using the generated logo URL for this preview so you can see it! -->
-                <img src="http://googleusercontent.com/image_generation_content/3" alt="Pixel Flicks" class="h-16 sm:h-24 object-contain origin-left">
+                <img src="./images/logo.png" alt="Pixel Flicks" class="h-16 sm:h-24 object-contain origin-left">
             </div>
             
             <div class="flex space-x-2 sm:space-x-3 items-center">
@@ -205,18 +202,11 @@
 
     </div>
 
-    <!-- 
-        NOTE: In this preview file, we embed the data directly.
-        In your GitHub version, use <script src="./movie-data.js"></script>
-    -->
-    <script>
-        // --- EMBEDDED DATA FOR PREVIEW ---
-        const movieData = [
-            { id: 1, title: "Jaws", year: 1975, correct: "A", image: "https://placehold.co/300x450/222222/cccccc?text=Jaws", options: ["Jaws", "The Poseidon Adventure", "Deep Blue Sea", "Close Encounters"] },
-            { id: 2, title: "E.T. the Extra-Terrestrial", year: 1982, correct: "B", image: "https://placehold.co/300x450/222222/cccccc?text=ET", options: ["Gremlins", "E.T. the Extra-Terrestrial", "Flight of the Navigator", "Alien"] },
-            // ... Add more rounds here as needed
-        ];
+    <!-- 1. Load the external data file (CRITICAL FOR 25 ROUNDS) -->
+    <script src="./movie-data.js"></script>
 
+    <!-- 2. Game logic script -->
+    <script>
         // --- Tone.js Setup ---
         let isMuted = false;
         const musicButtonEl = document.getElementById('musicButton');
@@ -225,13 +215,16 @@
         let loseSynth = null;
 
         function setupMusic() {
-            winSynth = new Tone.Synth({ 
+            if (winSynth && loseSynth) return; // Prevent creating multiple synths
+
+            // FIX: Use PolySynth to allow multiple notes (chords) without freezing
+            winSynth = new Tone.PolySynth(Tone.Synth, { 
                 oscillator: { type: "triangle" },
                 envelope: { attack: 0.01, decay: 0.2, sustain: 0, release: 0.5 }
             }).toDestination();
             winSynth.volume.value = -8;
 
-            loseSynth = new Tone.Synth({
+            loseSynth = new Tone.PolySynth(Tone.Synth, {
                 oscillator: { type: "sine" },
                 envelope: { attack: 0.1, decay: 0.5, sustain: 0, release: 0.5 }
             }).toDestination();
@@ -250,8 +243,9 @@
         async function toggleMusic() {
             if (Tone.context.state !== 'running') {
                 await Tone.start();
-                setupMusic(); 
             }
+            setupMusic(); 
+
             isMuted = !isMuted;
             if (isMuted) {
                 musicIconEl.innerHTML = '&#128263;'; 
@@ -338,11 +332,14 @@
             
             statusMessageEl.textContent = 'Welcome to Pixel Flicks! Click START GAME to begin.';
             
-            // Draw placeholder
+            // Check if movieData is loaded from external file
             if (typeof movieData !== 'undefined' && movieData.length > 0) {
+                 // Successfully loaded external data
                  drawPoster(movieData[0].image, true);
             } else {
+                 // Data file missing or empty
                  drawPoster("https://placehold.co/300x450/222222/cccccc?text=Loading+Data...", true);
+                 statusMessageEl.textContent = "Error: movie-data.js file not found or empty.";
             }
         };
 
@@ -383,7 +380,6 @@
                 ctx.font = '16px Inter';
                 ctx.textAlign = 'center';
                 ctx.fillText('ERROR LOADING IMAGE', CANVAS_W / 2, CANVAS_H / 2);
-                // In this local test, placeholders might fail if not using full URLs, but that's expected.
             };
             gameState.posterImage.crossOrigin = "anonymous"; 
             gameState.posterImage.src = url;

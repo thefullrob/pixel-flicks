@@ -212,16 +212,15 @@
     <!-- 2. Game logic script -->
     <script>
         // --- Tone.js Setup ---
-        let isMuted = false; // Default to false (Sound ON)
+        let isMuted = false;
         const musicButtonEl = document.getElementById('musicButton');
         const musicIconEl = document.getElementById('musicIcon');
         let winSynth = null;
         let loseSynth = null;
 
         function setupMusic() {
-            if (winSynth && loseSynth) return; // Prevent creating multiple synths
+            if (winSynth && loseSynth) return; 
 
-            // FIX: Use PolySynth to allow multiple notes (chords) without freezing
             winSynth = new Tone.PolySynth(Tone.Synth, { 
                 oscillator: { type: "triangle" },
                 envelope: { attack: 0.01, decay: 0.2, sustain: 0, release: 0.5 }
@@ -245,7 +244,6 @@
         }
 
         async function toggleMusic() {
-            // Ensure context is running on toggle
             if (Tone.context.state !== 'running') {
                 await Tone.start();
             }
@@ -276,6 +274,7 @@
             totalScore: 0,
             round: 0,
             currentMovie: null,
+            correctAnswer: null, // NEW: Stores the dynamic correct letter (A/B/C/D)
             timerInterval: null,
             timeLeft: TIMER_MAX,
             isGameOver: true,
@@ -283,9 +282,8 @@
             pixelatedChunks: []
         };
 
-        // NEW: Game List Array to store the shuffled order
         let gameMovies = [];
-        let attractModeAnimationId = null; // For the retro static effect
+        let attractModeAnimationId = null;
         
         // --- DOM References ---
         const totalScoreEl = document.getElementById('totalScore1P'); 
@@ -340,28 +338,24 @@
         
         // --- Retro Attract Mode Animation ---
         function startAttractMode() {
-            // Only start if not already running
             if (attractModeAnimationId) return;
 
             function animate(time) {
-                // Create random noise
                 const idata = ctx.createImageData(CANVAS_W, CANVAS_H);
                 const buffer32 = new Uint32Array(idata.data.buffer);
                 const len = buffer32.length;
 
                 for (let i = 0; i < len; i++) {
                     if (Math.random() < 0.1) {
-                        buffer32[i] = 0xff222222; // Dark gray noise
+                        buffer32[i] = 0xff222222; 
                     } else {
-                        buffer32[i] = 0xff000000; // Black background
+                        buffer32[i] = 0xff000000; 
                     }
                 }
                 ctx.putImageData(idata, 0, 0);
 
-                // Draw Blinking Text
-                // Blink roughly every 800ms
                 if (Math.floor(Date.now() / 800) % 2 === 0) {
-                    ctx.fillStyle = "#fcd34d"; // Amber/Gold color
+                    ctx.fillStyle = "#fcd34d"; 
                     ctx.font = "bold 30px 'Courier New', monospace";
                     ctx.textAlign = "center";
                     ctx.textBaseline = "middle";
@@ -384,26 +378,21 @@
 
         window.onload = () => {
             setupMusic(); 
-            // Set default to Sound ON
-            isMuted = false;
+            isMuted = false; // Default Sound ON
             musicIconEl.innerHTML = '&#128266;'; 
             musicButtonEl.innerHTML = '<span id="musicIcon" class="mr-1">&#128266;</span> Sound ON'; 
             
             statusMessageEl.textContent = 'Welcome to Pixel Flicks! Click START GAME to begin.';
             
-            // Start the retro TV static animation immediately
             startAttractMode();
 
-            // Load Data
             if (typeof movieData !== 'undefined' && movieData.length > 0) {
                  gameMovies = [...movieData];
                  shuffleArray(gameMovies);
-                 // Note: We don't draw the first poster yet, we let the Attract Mode run
             } else {
                  statusMessageEl.textContent = "Error: movie-data.js file not found or empty.";
             }
 
-            // Attach listener to Start Game button to wake up AudioContext
             initialStartButton.addEventListener('click', async () => {
                 if (Tone.context.state !== 'running') {
                     await Tone.start();
@@ -460,7 +449,6 @@
             const totalChunks = gameState.pixelatedChunks.length;
             const targetIndex = Math.floor(totalChunks * timeElapsedRatio);
 
-            // Get image dimensions to calculate scaling
             const imgWidth = gameState.posterImage.naturalWidth;
             const imgHeight = gameState.posterImage.naturalHeight;
             
@@ -506,30 +494,23 @@
         }
 
         function nextRound() {
-            // Hide overlay if it's open
             resultOverlayEl.classList.remove('active');
-
-            // NEW: Stop attract mode animation if running (on first click)
             stopAttractMode();
 
-            // UPDATED: Check against gameMovies instead of movieData
             if (gameMovies.length === 0) {
                 statusMessageEl.textContent = "Error loading data.";
                 return;
             }
 
             if (gameState.round >= gameMovies.length) {
-                // Game Completed (Finished Bonus Round)
                 showGameOver(`CONGRATS!`, `You beat the game! Final Score: ${gameState.totalScore}`);
                 return;
             }
             
             gameState.isGameOver = false;
             gameState.round++;
-            // UPDATED: Use gameMovies to get the random movie
             gameState.currentMovie = gameMovies[gameState.round - 1];
 
-            // Update Stage Indicator
             let stageText = "Stage 1";
             if (gameState.round > 20) stageText = "BONUS ROUND";
             else if (gameState.round > 10) stageText = "Stage 2";
@@ -543,21 +524,55 @@
             initialStartButton.classList.add('hidden'); 
             
             drawPoster(gameState.currentMovie.image, true);
-            renderChoices(gameState.currentMovie.options);
+            
+            // NEW: Generate Random Options
+            const roundOptions = generateRoundOptions(gameState.currentMovie);
+            gameState.correctAnswer = roundOptions.correctLetter; // Store dynamic correct answer
+            renderChoices(roundOptions.options);
             
             startTimer();
         }
 
-        function renderChoices(choices) {
+        // NEW HELPER: Generate random distractors + correct answer
+        function generateRoundOptions(correctMovie) {
+            // 1. Get all titles except correct one
+            const allTitles = movieData.map(m => m.title).filter(t => t !== correctMovie.title);
+            
+            // 2. Shuffle and pick 3 distractors
+            shuffleArray(allTitles);
+            const distractors = allTitles.slice(0, 3);
+            
+            // 3. Combine with correct title
+            const options = [...distractors, correctMovie.title];
+            
+            // 4. Shuffle options
+            shuffleArray(options);
+            
+            // 5. Find which letter (A,B,C,D) is correct
+            const correctIndex = options.indexOf(correctMovie.title);
+            const letters = ['A', 'B', 'C', 'D'];
+            const correctLetter = letters[correctIndex];
+            
+            return { options, correctLetter };
+        }
+
+        // Updated renderChoices to take dynamic options array
+        function renderChoices(optionsList) {
             choicesContainerEl.innerHTML = '';
             const optionsMap = ['A', 'B', 'C', 'D'];
-            choices.forEach((title, index) => {
+            
+            optionsList.forEach((title, index) => {
                 const optionChar = optionsMap[index];
                 const button = document.createElement('button');
                 button.className = 'choice-button px-4 py-3 bg-blue-600 text-white font-semibold rounded-lg text-left';
                 button.setAttribute('data-choice', optionChar);
                 button.onclick = (e) => checkAnswer(optionChar, e.currentTarget);
-                button.textContent = `${optionChar}) ${title} (${gameState.currentMovie.year})`;
+                
+                // We need to find the year for this specific title from the full list
+                const movieObj = movieData.find(m => m.title === title);
+                const year = movieObj ? movieObj.year : "????";
+                
+                button.textContent = `${optionChar}) ${title} (${year})`;
                 choicesContainerEl.appendChild(button);
             });
         }
@@ -565,7 +580,9 @@
         function checkAnswer(chosenOption, button) {
             clearInterval(gameState.timerInterval); 
             if (gameState.isGameOver) return; 
-            const isCorrect = chosenOption === gameState.currentMovie.correct;
+            
+            // NEW: Compare against dynamic correct answer
+            const isCorrect = chosenOption === gameState.correctAnswer;
             endRound(isCorrect, button);
         }
 
@@ -574,14 +591,10 @@
             resultTitleEl.className = "result-title text-yellow-400";
             resultScoreEl.textContent = message;
             
-            // UPDATED: Share Button on Game Over
             overlayNextButtonEl.textContent = "Send to a Friend";
             overlayNextButtonEl.classList.remove('bg-indigo-600', 'hover:bg-indigo-500');
             overlayNextButtonEl.classList.add('bg-green-600', 'hover:bg-green-500');
             overlayNextButtonEl.onclick = shareGame; 
-            
-            // Note: To properly restart, user needs to refresh or we add a secondary button. 
-            // For simplicity sharing is the primary action here.
             
             resultOverlayEl.classList.add('active');
         }
@@ -598,7 +611,6 @@
             let btnText = "Next Poster";
             let btnAction = nextRound;
 
-            // Prepare Overlay Content
             if (isCorrect) {
                 roundPoints = calculateScore();
                 gameState.totalScore += roundPoints;
@@ -615,8 +627,6 @@
                 resultScoreText = `The answer was:\n${gameState.currentMovie.title}`;
             }
 
-            // --- STAGE PROGRESSION CHECKS ---
-            // Check after Round 10 (End of Stage 1)
             if (gameState.round === 10) {
                 if (gameState.totalScore < STAGE_1_PASS_SCORE) {
                     resultTitleText = "GAME OVER";
@@ -629,7 +639,6 @@
                     btnText = "Start Stage 2";
                 }
             }
-            // Check after Round 20 (End of Stage 2)
             else if (gameState.round === 20) {
                 if (gameState.totalScore < BONUS_ROUND_UNLOCK_SCORE) {
                     resultTitleText = "GAME OVER";
@@ -639,23 +648,20 @@
                     btnAction = shareGame;
                 } else {
                     resultTitleText = "BONUS UNLOCKED!";
-                    titleClass = "result-title text-glow-gold"; // New Gold Style
+                    titleClass = "result-title text-glow-gold"; 
                     resultScoreText += `\n\n1000+ Points Reached!\nEntering Bonus Round...`;
                     btnText = "Start Bonus Round";
                 }
             }
-            // End of Game (Round 25)
             else if (gameState.round === 25) {
                  btnText = "Finish Game";
             }
 
-            // Apply to Overlay elements
             resultTitleEl.textContent = resultTitleText;
             resultTitleEl.className = titleClass;
             resultScoreEl.innerText = resultScoreText; 
             
             overlayNextButtonEl.textContent = btnText;
-            // Reset button style to standard next/action style
             if (btnAction === shareGame) {
                  overlayNextButtonEl.classList.remove('bg-indigo-600', 'hover:bg-indigo-500');
                  overlayNextButtonEl.classList.add('bg-green-600', 'hover:bg-green-500');
@@ -665,14 +671,13 @@
             }
             overlayNextButtonEl.onclick = btnAction;
             
-            // Trigger Animation
             resultOverlayEl.classList.add('active');
 
-            // Highlight buttons (behind overlay)
             Array.from(choicesContainerEl.children).forEach(btn => {
                 btn.disabled = true;
                 const choice = btn.getAttribute('data-choice');
-                if (choice === gameState.currentMovie.correct) {
+                // NEW: Check against dynamic correct answer
+                if (choice === gameState.correctAnswer) {
                     btn.classList.add('correct', 'bg-blue-600');
                 } else if (btn === clickedButton) {
                     btn.classList.add('incorrect', 'bg-blue-600');

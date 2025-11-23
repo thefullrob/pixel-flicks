@@ -25,7 +25,8 @@
             background-color: #2d3748;
             border-radius: 1rem;
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
-            position: relative; /* Needed for score animation positioning */
+            position: relative; /* Needed for score and overlay positioning */
+            overflow: hidden; /* Keeps the overlay inside the rounded corners */
         }
         #posterCanvas {
             width: 100%;
@@ -63,19 +64,13 @@
             transition: width 1s linear;
         }
 
-        /* Score Animation Keyframes */
-        @keyframes score-fly {
-            0% {
-                opacity: 1;
-                transform: scale(1.5) translateY(0);
-            }
-            100% {
-                opacity: 0;
-                transform: scale(0.5) translateY(-50px);
-            }
-        }
+        /* --- NEW ANIMATIONS --- */
 
-        /* Score Animation Element Style */
+        /* 1. Score Fly Animation (Small +Points) */
+        @keyframes score-fly {
+            0% { opacity: 1; transform: scale(1.5) translateY(0); }
+            100% { opacity: 0; transform: scale(0.5) translateY(-50px); }
+        }
         .score-popup {
             position: absolute;
             font-size: 2.5rem;
@@ -87,22 +82,69 @@
             text-shadow: 0 0 10px rgba(52, 211, 153, 0.7);
         }
 
-        /* Player-specific styles (retained color for aesthetic) */
-        .player-1-color { color: #fcd34d; } /* Amber */
+        /* 2. Round Result Overlay Animation (Big Popup) */
+        @keyframes pop-in {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.05); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+
+        .result-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0); /* Start hidden */
+            background: rgba(31, 41, 55, 0.95); /* Dark gray, slightly transparent */
+            padding: 2rem;
+            border-radius: 1rem;
+            text-align: center;
+            z-index: 50;
+            border: 4px solid #4b5563;
+            box-shadow: 0 0 30px rgba(0,0,0,0.9);
+            width: 80%;
+            max-width: 400px;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.2s ease;
+        }
+
+        .result-overlay.active {
+            animation: pop-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            pointer-events: auto;
+        }
+
+        /* Text styling for the result */
+        .result-title { font-size: 3rem; font-weight: 900; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 2px; }
+        .result-score { font-size: 1.5rem; color: #e5e7eb; margin-bottom: 1.5rem; }
+        .text-glow-green { text-shadow: 0 0 15px rgba(52, 211, 153, 0.8); color: #34d399; }
+        .text-glow-red { text-shadow: 0 0 15px rgba(239, 68, 68, 0.8); color: #ef4444; }
+
     </style>
 </head>
 <body>
 
     <div id="game-app" class="game-container p-6 text-white">
 
+        <!-- NEW: The Pop-up Result Overlay -->
+        <div id="resultOverlay" class="result-overlay">
+            <div id="resultTitle" class="result-title">CORRECT!</div>
+            <div id="resultScore" class="result-score">+100 Points</div>
+            <button id="overlayNextButton" class="px-8 py-3 bg-indigo-600 hover:bg-indigo-500 text-white text-xl font-bold rounded-full shadow-lg transition transform hover:scale-105" onclick="nextRound()">
+                Next Round
+            </button>
+        </div>
+
         <!-- Header, Sound Button, and Share Button -->
         <div class="flex justify-between items-center mb-6">
-            <h1 class="text-4xl font-extrabold text-yellow-400">
-                Pixel Flicks
-            </h1>
-            <div class="flex space-x-3">
+            <!-- LOGO IMAGE -->
+            <div class="flex-grow">
+                <!-- Using the generated logo URL for this preview so you can see it! -->
+                <img src="http://googleusercontent.com/image_generation_content/3" alt="Pixel Flicks" class="h-16 sm:h-24 object-contain origin-left">
+            </div>
+            
+            <div class="flex space-x-2 sm:space-x-3 items-center">
                 <button id="shareButton" 
-                        class="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded-full text-sm transition duration-150 flex items-center"
+                        class="px-3 py-2 sm:px-4 bg-green-600 hover:bg-green-500 text-white rounded-full text-xs sm:text-sm transition duration-150 flex items-center"
                         onclick="shareGame()">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="mr-1" viewBox="0 0 16 16">
                         <path d="M13.5 1a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM11 2.5a2.5 2.5 0 1 1 .6 1.636L7.42 7.391a2.5 2.5 0 0 1-2.858-.133L1.5 8.587A2.5 2.5 0 1 1 1.5 13a2.5 2.5 0 0 1 1.488-.679l3.05-1.525a2.47 2.47 0 0 1 1.056-.12l3.411 3.411a2.5 2.5 0 1 1 2.5-2.5 2.5 2.5 0 0 1-.6-1.636l-3.957-3.957a2.5 2.5 0 0 1 .133-2.858L10.364 2.52a2.5 2.5 0 0 1-.6-.636zm2-1.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM1.5 11a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/>
@@ -110,9 +152,9 @@
                     Share
                 </button>
                 <button id="musicButton" 
-                        class="px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-full text-sm transition duration-150 flex items-center"
+                        class="px-3 py-2 sm:px-4 bg-gray-600 hover:bg-gray-500 text-white rounded-full text-xs sm:text-sm transition duration-150 flex items-center"
                         onclick="toggleMusic()">
-                    <span id="musicIcon">&#128263;</span> Sound OFF
+                    <span id="musicIcon" class="mr-1">&#128263;</span> Sound OFF
                 </button>
             </div>
         </div>
@@ -120,20 +162,17 @@
         <!-- Game Content -->
         <div id="gameContent" class="">
             
-            <!-- Scoreboard and Timer (Single Player) -->
+            <!-- Scoreboard and Timer -->
             <div id="scoreboard" class="flex flex-col gap-3 mb-4 p-3 bg-gray-700 rounded-lg">
-                
                 <div id="scoreDisplay1P" class="flex justify-between items-center">
                     <div class="text-xl font-semibold player-1-color">
                         Score: <span id="totalScore1P">0</span> 
                     </div>
                 </div>
-
                 <div class="flex justify-between items-center">
                     <div class="text-xl font-semibold">Round: <span id="roundNumber">1</span></div>
                     <div class="text-xl font-semibold">Current Points: <span id="currentPoints">100</span></div>
                 </div>
-                
             </div>
 
             <!-- Timer Bar -->
@@ -149,10 +188,11 @@
                 <canvas id="posterCanvas" width="300" height="450" class="rounded-lg shadow-xl"></canvas>
             </div>
 
-            <!-- Status Message and Start/Next Button -->
+            <!-- Status Message (Kept for fallback) -->
             <div class="text-center my-4">
-                <p id="statusMessage" class="text-lg font-medium min-h-[1.5rem]"></p>
-                <button id="nextButton" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-full mt-2" onclick="nextRound()">
+                <p id="statusMessage" class="text-lg font-medium min-h-[1.5rem] text-gray-400"></p>
+                <!-- Note: The 'Start Game' button is now handled mostly by the overlay, but we keep this for the very first start -->
+                <button id="initialStartButton" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-full mt-2" onclick="nextRound()">
                     Start Game
                 </button>
             </div>
@@ -166,58 +206,31 @@
     </div>
 
     <!-- 
-        NOTE: The movieData array must be loaded from the external movie-data.js file 
-        in the final GitHub deployment. 
+        NOTE: In this preview file, we embed the data directly.
+        In your GitHub version, use <script src="./movie-data.js"></script>
     -->
     <script>
-        // --- DATA INTEGRATION (Required for local preview only) ---
-        // When deployed to GitHub, this array is loaded from movie-data.js
+        // --- EMBEDDED DATA FOR PREVIEW ---
         const movieData = [
-            { id: 1, title: "Jaws", year: 1975, correct: "A", image: "./images/1.jpg", options: ["Jaws", "The Poseidon Adventure", "Deep Blue Sea", "Close Encounters"] },
-            { id: 2, title: "E.T. the Extra-Terrestrial", year: 1982, correct: "B", image: "./images/2.jpg", options: ["Gremlins", "E.T. the Extra-Terrestrial", "Flight of the Navigator", "Alien"] },
-            { id: 3, title: "Back to the Future", year: 1985, correct: "C", image: "./images/3.jpg", options: ["Ferris Bueller's Day Off", "The Goonies", "Back to the Future", "Short Circuit"] },
-            { id: 4, title: "Pulp Fiction", year: 1994, correct: "A", image: "./images/4.jpg", options: ["Pulp Fiction", "Reservoir Dogs", "Snatch", "The Big Lebowski"] },
-            { id: 5, title: "The Matrix", year: 1999, correct: "D", image: "./images/5.jpg", options: ["Terminator 2", "Inception", "Dark City", "The Matrix"] },
-            { id: 6, title: "The Fellowship of the Ring", year: 2001, correct: "B", image: "./images/6.jpg", options: ["Harry Potter", "The Fellowship of the Ring", "Narnia", "Eragon"] },
-            { id: 7, title: "The Dark Knight", year: 2008, correct: "C", image: "./images/7.jpg", options: ["Batman Begins", "Man of Steel", "The Dark Knight", "Watchmen"] },
-            { id: 8, title: "Inception", year: 2010, correct: "A", image: "./images/8.jpg", options: ["Inception", "Tenet", "Interstellar", "Shutter Island"] },
-            { id: 9, title: "Inside Out", year: 2015, correct: "D", image: "./images/9.jpg", options: ["Coco", "Up", "Soul", "Inside Out"] },
-            { id: 10, title: "Dune", year: 2021, correct: "B", image: "./images/10.jpg", options: ["Blade Runner 2049", "Dune", "Arrival", "Interstellar"] },
-            { id: 11, title: "The Shining", year: 1980, correct: "C", image: "./images/11.jpg", options: ["Psycho", "Carrie", "The Shining", "Exorcist"] },
-            { id: 12, title: "The Shawshank Redemption", year: 1994, correct: "A", image: "./images/12.jpg", options: ["The Shawshank Redemption", "Forrest Gump", "Pulp Fiction", "Green Mile"] },
-            { id: 13, title: "Finding Nemo", year: 2003, correct: "B", image: "./images/13.jpg", options: ["Toy Story 3", "Finding Nemo", "Shrek", "Monsters Inc"] },
-            { id: 14, title: "The Godfather Part II", year: 1974, correct: "D", image: "./images/14.jpg", options: ["Goodfellas", "The Untouchables", "Scarface", "The Godfather Part II"] },
-            { id: 15, title: "Interstellar", year: 2014, correct: "B", image: "./images/15.jpg", options: ["Gravity", "Interstellar", "Arrival", "The Martian"] },
-            { id: 16, title: "Die Hard", year: 1988, correct: "A", image: "./images/16.jpg", options: ["Die Hard", "Lethal Weapon", "Terminator", "Total Recall"] },
-            { id: 17, title: "Top Gun: Maverick", year: 2022, correct: "D", image: "./images/17.jpg", options: ["Dune Part Two", "No Time to Die", "Oppenheimer", "Top Gun: Maverick"] },
-            { id: 18, title: "The Silence of the Lambs", year: 1991, correct: "C", image: "./images/18.jpg", options: ["Se7en", "Fargo", "The Silence of the Lambs", "Usual Suspects"] },
-            { id: 19, title: "Avatar", year: 2009, correct: "A", image: "./images/19.jpg", options: ["Avatar", "District 9", "Star Trek", "Prometheus"] },
-            { id: 20, title: "Alien", year: 1979, correct: "B", image: "./images/20.jpg", options: ["The Thing", "Alien", "Close Encounters", "Star Wars"] },
-            { id: 21, title: "Raiders of the Lost Ark", year: 1981, correct: "D", image: "./images/21.jpg", options: ["The Mummy", "Romancing the Stone", "Indiana Jones", "Raiders of the Lost Ark"] },
-            { id: 22, title: "1917", year: 2019, correct: "C", image: "./images/22.jpg", options: ["Dunkirk", "Saving Private Ryan", "1917", "Hacksaw Ridge"] },
-            { id: 23, title: "Jurassic Park", year: 1993, correct: "A", image: "./images/23.jpg", options: ["Jurassic Park", "Twister", "Godzilla", "Armageddon"] },
-            { id: 24, "title": "Oppenheimer", year: 2023, correct: "B", image: "./images/24.jpg", options: ["Tenet", "Oppenheimer", "The Martian", "Dunkirk"] },
-            { id: 25, title: "Ghostbusters", year: 1984, correct: "D", image: "./images/25.jpg", options: ["Beetlejuice", "Gremlins", "E.T.", "Ghostbusters"] }
+            { id: 1, title: "Jaws", year: 1975, correct: "A", image: "https://placehold.co/300x450/222222/cccccc?text=Jaws", options: ["Jaws", "The Poseidon Adventure", "Deep Blue Sea", "Close Encounters"] },
+            { id: 2, title: "E.T. the Extra-Terrestrial", year: 1982, correct: "B", image: "https://placehold.co/300x450/222222/cccccc?text=ET", options: ["Gremlins", "E.T. the Extra-Terrestrial", "Flight of the Navigator", "Alien"] },
+            // ... Add more rounds here as needed
         ];
 
-        // --- Tone.js (Audio) Setup ---
+        // --- Tone.js Setup ---
         let isMuted = false;
         const musicButtonEl = document.getElementById('musicButton');
         const musicIconEl = document.getElementById('musicIcon');
-
-        // Sound effects synths
         let winSynth = null;
         let loseSynth = null;
 
         function setupMusic() {
-            // Win Sound Synth (Simple triangle wave for a chime)
             winSynth = new Tone.Synth({ 
                 oscillator: { type: "triangle" },
                 envelope: { attack: 0.01, decay: 0.2, sustain: 0, release: 0.5 }
             }).toDestination();
             winSynth.volume.value = -8;
 
-            // Lose Sound Synth (Low bass for a fail noise)
             loseSynth = new Tone.Synth({
                 oscillator: { type: "sine" },
                 envelope: { attack: 0.1, decay: 0.5, sustain: 0, release: 0.5 }
@@ -225,10 +238,8 @@
             loseSynth.volume.value = -6;
         }
         
-        // Play sound based on result
         function playSound(isCorrect) {
             if (isMuted || !window.Tone || !winSynth || !loseSynth) return;
-            
             if (isCorrect) {
                 winSynth.triggerAttackRelease(["C5", "E5", "G5"], "8n");
             } else {
@@ -241,16 +252,13 @@
                 await Tone.start();
                 setupMusic(); 
             }
-
             isMuted = !isMuted;
             if (isMuted) {
                 musicIconEl.innerHTML = '&#128263;'; 
-                musicButtonEl.textContent = ' Sound OFF'; 
-                musicButtonEl.prepend(musicIconEl);
+                musicButtonEl.innerHTML = '<span id="musicIcon" class="mr-1">&#128263;</span> Sound OFF'; 
             } else {
                 musicIconEl.innerHTML = '&#128266;'; 
-                musicButtonEl.textContent = ' Sound ON'; 
-                musicButtonEl.prepend(musicIconEl);
+                musicButtonEl.innerHTML = '<span id="musicIcon" class="mr-1">&#128266;</span> Sound ON'; 
             }
         }
 
@@ -261,7 +269,7 @@
 
         // --- Game State Variables ---
         let gameState = {
-            totalScore: 0, // Simplified back to single total score
+            totalScore: 0,
             round: 0,
             currentMovie: null,
             timerInterval: null,
@@ -272,42 +280,39 @@
         };
         
         // --- DOM References ---
-        const totalScoreEl = document.getElementById('totalScore1P'); // Renamed to match the single score ID in HTML
+        const totalScoreEl = document.getElementById('totalScore1P'); 
         const roundNumberEl = document.getElementById('roundNumber');
         const currentPointsEl = document.getElementById('currentPoints');
         const timeLeftDisplayEl = document.getElementById('timeLeftDisplay');
         const timerBarEl = document.getElementById('timerBar');
         const statusMessageEl = document.getElementById('statusMessage');
-        const nextButtonEl = document.getElementById('nextButton');
+        const initialStartButton = document.getElementById('initialStartButton');
         const choicesContainerEl = document.getElementById('choicesContainer');
         const canvas = document.getElementById('posterCanvas');
         const ctx = canvas.getContext('2d');
+        
+        // New Overlay References
+        const resultOverlayEl = document.getElementById('resultOverlay');
+        const resultTitleEl = document.getElementById('resultTitle');
+        const resultScoreEl = document.getElementById('resultScore');
+        const overlayNextButtonEl = document.getElementById('overlayNextButton');
+
         const CANVAS_W = canvas.width;
         const CANVAS_H = canvas.height;
         const CHUNK_SIZE = 15;
 
-        // --- Share Function (NEW) ---
+        // --- Share Function ---
         async function shareGame() {
             const finalScore = gameState.totalScore;
-            const message = `I just scored ${finalScore} points in Pixel Flicks: The Movie Poster Quiz! Can you beat my score?`;
+            const message = `I just scored ${finalScore} points in Pixel Flicks! Can you beat me?`;
             const shareUrl = window.location.href; 
             
             if (navigator.share) {
-                // Use native Web Share API for mobile/modern browsers
                 try {
-                    await navigator.share({
-                        title: 'Pixel Flicks Quiz',
-                        text: message,
-                        url: shareUrl,
-                    });
+                    await navigator.share({ title: 'Pixel Flicks', text: message, url: shareUrl });
                     statusMessageEl.textContent = "Shared successfully!";
-                } catch (error) {
-                    // console.error('Error sharing:', error);
-                    // Fallback to clipboard copy if sharing is blocked or fails
-                    copyToClipboard(message, shareUrl);
-                }
+                } catch (error) { copyToClipboard(message, shareUrl); }
             } else {
-                // Fallback for desktop browsers: copy URL to clipboard
                 copyToClipboard(message, shareUrl);
             }
         }
@@ -320,12 +325,9 @@
              document.execCommand('copy');
              document.body.removeChild(tempInput);
              
-             statusMessageEl.textContent = "Link and score copied to clipboard! Share with friends!";
+             statusMessageEl.textContent = "Link copied! Share with friends!";
              statusMessageEl.classList.add('text-yellow-400');
-             setTimeout(() => { 
-                statusMessageEl.classList.remove('text-yellow-400');
-                statusMessageEl.textContent = `Game Over! Final Score: ${gameState.totalScore}.`; // Reset status message
-            }, 3000);
+             setTimeout(() => { statusMessageEl.classList.remove('text-yellow-400'); }, 3000);
         }
         
         // --- Initialization and Game Flow ---
@@ -333,13 +335,10 @@
         window.onload = () => {
             setupMusic(); 
             isMuted = true;
-            musicIconEl.innerHTML = '&#128263;'; 
-            musicButtonEl.textContent = ' Sound OFF';
-            musicButtonEl.prepend(musicIconEl);
             
             statusMessageEl.textContent = 'Welcome to Pixel Flicks! Click START GAME to begin.';
-
-            // Draw initial placeholder
+            
+            // Draw placeholder
             if (typeof movieData !== 'undefined' && movieData.length > 0) {
                  drawPoster(movieData[0].image, true);
             } else {
@@ -360,13 +359,11 @@
             }
         }
         
-        // --- Canvas and Reveal Logic (Unchanged) ---
+        // --- Canvas and Reveal Logic ---
         function drawPoster(url, pixelate = false) {
             ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
-
             gameState.posterImage.onload = () => {
                 ctx.drawImage(gameState.posterImage, 0, 0, CANVAS_W, CANVAS_H);
-
                 if (pixelate) {
                     gameState.pixelatedChunks = [];
                     for (let x = 0; x < CANVAS_W; x += CHUNK_SIZE) {
@@ -385,8 +382,8 @@
                 ctx.fillStyle = '#fff';
                 ctx.font = '16px Inter';
                 ctx.textAlign = 'center';
-                ctx.fillText('ERROR LOADING IMAGE', CANVAS_W / 2, CANVAS_H / 2 - 10);
-                ctx.fillText(`Check round ${gameState.round}.jpg in /images folder`, CANVAS_W / 2, CANVAS_H / 2 + 10);
+                ctx.fillText('ERROR LOADING IMAGE', CANVAS_W / 2, CANVAS_H / 2);
+                // In this local test, placeholders might fail if not using full URLs, but that's expected.
             };
             gameState.posterImage.crossOrigin = "anonymous"; 
             gameState.posterImage.src = url;
@@ -400,11 +397,7 @@
             for (let i = 0; i < targetIndex; i++) {
                 const chunk = gameState.pixelatedChunks[i];
                 if (!chunk.revealed) {
-                    const sx = chunk.x; const sy = chunk.y; 
-                    const sw = CHUNK_SIZE; const sh = CHUNK_SIZE; 
-                    const dx = chunk.x; const dy = chunk.y; 
-                    const dw = CHUNK_SIZE; const dh = CHUNK_SIZE; 
-                    ctx.drawImage(gameState.posterImage, sx, sy, sw, sh, dx, dy, dw, dh);
+                    ctx.drawImage(gameState.posterImage, chunk.x, chunk.y, CHUNK_SIZE, CHUNK_SIZE, chunk.x, chunk.y, CHUNK_SIZE, CHUNK_SIZE);
                     chunk.revealed = true;
                 }
             }
@@ -414,41 +407,42 @@
             ctx.drawImage(gameState.posterImage, 0, 0, CANVAS_W, CANVAS_H);
             gameState.pixelatedChunks.forEach(chunk => chunk.revealed = true);
         }
-        // --- Game Flow Functions (Simplified) ---
+
+        // --- Game Flow Functions ---
 
         function startTimer() {
             gameState.timeLeft = TIMER_MAX;
             gameState.timerInterval = setInterval(() => {
                 gameState.timeLeft -= 1;
-                
                 const currentScore = calculateScore();
                 currentPointsEl.textContent = currentScore;
                 timeLeftDisplayEl.textContent = gameState.timeLeft;
                 timerBarEl.style.width = `${(gameState.timeLeft / TIMER_MAX) * 100}%`;
-                
                 revealPosterPiece();
-
                 if (gameState.timeLeft <= 0) {
-                    endRound(false); // Time ran out
+                    endRound(false); 
                 }
             }, 1000);
         }
 
         function nextRound() {
+            // Hide overlay if it's open
+            resultOverlayEl.classList.remove('active');
+
             if (typeof movieData === 'undefined' || movieData.length === 0) {
-                statusMessageEl.textContent = "Error: Movie data failed to load. Please check movie-data.js file.";
-                nextButtonEl.textContent = 'Data Error';
-                nextButtonEl.classList.remove('hidden');
+                statusMessageEl.textContent = "Error loading data.";
                 return;
             }
 
             if (gameState.round >= movieData.length) {
-                // Game over
-                statusMessageEl.textContent = `GAME OVER! Your Final Score: ${gameState.totalScore}. Click SHARE to brag!`;
-                nextButtonEl.textContent = 'Play Again';
-                nextButtonEl.onclick = () => window.location.reload(); 
+                // Show Game Over in Overlay
+                resultTitleEl.textContent = "GAME OVER";
+                resultTitleEl.className = "result-title text-yellow-400";
+                resultScoreEl.textContent = `Final Score: ${gameState.totalScore}`;
+                overlayNextButtonEl.textContent = "Play Again";
+                overlayNextButtonEl.onclick = () => window.location.reload();
+                resultOverlayEl.classList.add('active');
                 
-                // Reset Scores for next game
                 gameState.round = 0;
                 gameState.totalScore = 0;
                 return;
@@ -462,9 +456,9 @@
             currentPointsEl.textContent = MAX_SCORE;
             roundNumberEl.textContent = gameState.round;
             
-            statusMessageEl.textContent = `Round ${gameState.round} of ${movieData.length}. Guess the movie!`;
-            statusMessageEl.classList.remove('text-red-400', 'text-green-400');
-            nextButtonEl.classList.add('hidden');
+            // Clear status and hide initial button
+            statusMessageEl.textContent = ""; 
+            initialStartButton.classList.add('hidden'); 
             
             drawPoster(gameState.currentMovie.image, true);
             renderChoices(gameState.currentMovie.options);
@@ -475,106 +469,72 @@
         function renderChoices(choices) {
             choicesContainerEl.innerHTML = '';
             const optionsMap = ['A', 'B', 'C', 'D'];
-            
             choices.forEach((title, index) => {
                 const optionChar = optionsMap[index];
                 const button = document.createElement('button');
                 button.className = 'choice-button px-4 py-3 bg-blue-600 text-white font-semibold rounded-lg text-left';
                 button.setAttribute('data-choice', optionChar);
-                
-                // Click handler simplified for 1P mode
                 button.onclick = (e) => checkAnswer(optionChar, e.currentTarget);
-                
                 button.textContent = `${optionChar}) ${title} (${gameState.currentMovie.year})`;
                 choicesContainerEl.appendChild(button);
             });
         }
 
         function checkAnswer(chosenOption, button) {
-            clearInterval(gameState.timerInterval); // Pause timer
-            
+            clearInterval(gameState.timerInterval); 
             if (gameState.isGameOver) return; 
-            
             const isCorrect = chosenOption === gameState.currentMovie.correct;
             endRound(isCorrect, button);
         }
 
-        /**
-         * Ends the current round, updates score, and shows the result.
-         */
         function endRound(isCorrect, clickedButton = null) {
             gameState.isGameOver = true;
-            
             playSound(isCorrect);
             fullReveal();
 
             let roundPoints = 0;
-            
+            let resultTitleText = "";
+            let resultScoreText = "";
+            let titleClass = "result-title";
+
+            // Prepare Overlay Content
             if (isCorrect) {
                 roundPoints = calculateScore();
-                
                 gameState.totalScore += roundPoints;
                 totalScoreEl.textContent = gameState.totalScore;
                 
-                // ANMATION: Trigger score celebration
-                if (roundPoints > 0) {
-                    animateScorePopup(roundPoints);
-                }
+                // Set up Correct Overlay
+                resultTitleText = "CORRECT!";
+                titleClass += " text-glow-green";
+                resultScoreText = `+${roundPoints} Points`;
                 
-                statusMessageEl.textContent = `CORRECT! You earned ${roundPoints} points!`;
-                statusMessageEl.classList.remove('text-red-400');
-                statusMessageEl.classList.add('text-green-400');
             } else {
-                statusMessageEl.textContent = `INCORRECT! The answer was "${gameState.currentMovie.title}".`;
-                statusMessageEl.classList.add('text-red-400');
-                statusMessageEl.classList.remove('text-green-400');
+                // Set up Incorrect Overlay
+                resultTitleText = "WRONG!"; // Or "TIME'S UP!" if clickedButton is null/time ran out
+                if (!clickedButton) resultTitleText = "TIME'S UP!";
+                
+                titleClass += " text-glow-red";
+                resultScoreText = `The answer was:\n${gameState.currentMovie.title}`;
             }
-            
-            // Update current points display
-            currentPointsEl.textContent = roundPoints;
 
-            // Highlight buttons
+            // Apply to Overlay elements
+            resultTitleEl.textContent = resultTitleText;
+            resultTitleEl.className = titleClass;
+            resultScoreEl.innerText = resultScoreText; // innerText handles \n
+            overlayNextButtonEl.textContent = (gameState.round < movieData.length) ? 'Next Poster' : 'Finish Game';
+            
+            // Trigger Animation
+            resultOverlayEl.classList.add('active');
+
+            // Highlight buttons (behind overlay)
             Array.from(choicesContainerEl.children).forEach(btn => {
                 btn.disabled = true;
                 const choice = btn.getAttribute('data-choice');
                 if (choice === gameState.currentMovie.correct) {
-                    btn.classList.add('correct');
-                    btn.classList.remove('bg-blue-600');
+                    btn.classList.add('correct', 'bg-blue-600');
                 } else if (btn === clickedButton) {
-                    btn.classList.add('incorrect');
-                    btn.classList.remove('bg-blue-600');
+                    btn.classList.add('incorrect', 'bg-blue-600');
                 }
-            });
-
-            nextButtonEl.classList.remove('hidden');
-            nextButtonEl.textContent = (gameState.round < movieData.length) ? 'Next Poster' : 'Finish Game';
-        }
-
-        /**
-         * ANIMATION FUNCTION: Creates and animates a score popup.
-         */
-        function animateScorePopup(points) {
-            const popup = document.createElement('span');
-            popup.textContent = `+${points}`;
-            popup.classList.add('score-popup');
-            
-            const gameApp = document.getElementById('game-app');
-            gameApp.appendChild(popup);
-
-            let targetEl = totalScoreEl; // Single target element
-            popup.style.color = '#fcd34d'; 
-
-            // Measure the target element's position relative to the game container
-            const targetRect = targetEl.getBoundingClientRect();
-            const gameRect = gameApp.getBoundingClientRect();
-            
-            // Calculate starting position near the target score display
-            popup.style.top = `${targetRect.top - gameRect.top}px`;
-            popup.style.left = `${targetRect.left - gameRect.left}px`;
-
-            // Clean up the element after the animation finishes
-            popup.addEventListener('animationend', () => {
-                popup.remove();
             });
         }
     </script>

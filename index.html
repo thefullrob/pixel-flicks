@@ -260,7 +260,7 @@
         const TIMER_MAX = 15;
         const REVEAL_LIMIT = 1.0; // FULL REVEAL (Changed from 0.70)
         const MAX_SCORE = 100;
-        const CHUNK_SIZE = 3; // Much smaller pixels (1/5th of previous 15 size)
+        const CHUNK_SIZE = 7; // Updated to 7 as requested
 
         // --- Game State Variables ---
         let gameState = {
@@ -388,12 +388,32 @@
         function revealPosterPiece() {
             const timeElapsedRatio = (TIMER_MAX - gameState.timeLeft) / TIMER_MAX;
             if (timeElapsedRatio >= REVEAL_LIMIT) return;
+            
             const totalChunks = gameState.pixelatedChunks.length;
             const targetIndex = Math.floor(totalChunks * timeElapsedRatio);
+
+            // Get image dimensions to calculate scaling
+            const imgWidth = gameState.posterImage.naturalWidth;
+            const imgHeight = gameState.posterImage.naturalHeight;
+            
+            // Safety check
+            if (!imgWidth || !imgHeight) return;
+
+            // Calculate scale factors
+            const scaleX = imgWidth / CANVAS_W;
+            const scaleY = imgHeight / CANVAS_H;
+
             for (let i = 0; i < targetIndex; i++) {
                 const chunk = gameState.pixelatedChunks[i];
                 if (!chunk.revealed) {
-                    ctx.drawImage(gameState.posterImage, chunk.x, chunk.y, CHUNK_SIZE, CHUNK_SIZE, chunk.x, chunk.y, CHUNK_SIZE, CHUNK_SIZE);
+                    // Calculate source coordinates using scale factors
+                    const sx = chunk.x * scaleX;
+                    const sy = chunk.y * scaleY;
+                    const sWidth = CHUNK_SIZE * scaleX;
+                    const sHeight = CHUNK_SIZE * scaleY;
+
+                    // Draw the correctly scaled portion of the image
+                    ctx.drawImage(gameState.posterImage, sx, sy, sWidth, sHeight, chunk.x, chunk.y, CHUNK_SIZE, CHUNK_SIZE);
                     chunk.revealed = true;
                 }
             }
